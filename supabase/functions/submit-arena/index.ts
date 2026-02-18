@@ -180,39 +180,40 @@ serve(async (req: Request) => {
       honeyReward = 5; rpReward = 2; newStreak = 0;
     }
 
-    await supabase.from("arenas").update({
+    // Save arena result
+    const { error: arenaErr } = await supabase.from("arenas").update({
       player_scores: pScores, opponent_scores: oScores,
       player_hp: pHP, opponent_hp: oHP, result,
       honey_delta: honeyReward, rp_delta: rpReward, streak_bonus: streakBonus,
     }).eq("id", arenaId);
+    if (arenaErr) throw arenaErr;
 
-    await supabase.from("users").update({
+    // Update user
+    const { error: userUpdErr } = await supabase.from("users").update({
       honey: user.honey + honeyReward,
       rp: (user.rp || 0) + rpReward,
       arena_streak: newStreak,
     }).eq("id", user.id);
-// 1) Обновляем квесты отдельно
-await updateQuestProgress(user.id, "play_arena", 1);
+    if (userUpdErr) throw userUpdErr;
 
-if (result === "win") {
-  await updateQuestProgress(user.id, "win_arena", 1);
-  if (newStreak >= 3) {
-    await updateQuestProgress(user.id, "win_streak_3", 1);
-  }
-}
+    // Log transaction
+    const { error: txErr } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      type: `arena_${result}`,
+      honey_delta: honeyReward,
+      rp_delta: rpReward,
+      idempotency_key: `arena_result_${arenaId}`,
+    });
+    if (txErr) throw txErr;
 
-// 2) Потом логируем транзакцию
-const tx = {
-  user_id: user.id,
-  type: `arena_${result}`,
-  honey_delta: honeyReward,
-  rp_delta: rpReward,
-  satiety_delta: 0,
-  idempotency_key: `arena_result_${arenaId}`, // ✅ стабильный ключ
-};
-
-const { error } = await supabase.from("transactions").insert(tx);
-if (error) throw error;
+    // Update quest progress
+    await updateQuestProgress(user.id, "play_arena", 1);
+    if (result === "win") {
+      await updateQuestProgress(user.id, "win_arena", 1);
+      if (newStreak >= 3) {
+        await updateQuestProgress(user.id, "win_streak_3", 1);
+      }
+    }
 
     return json({
       result, player_hp: pHP, opponent_hp: oHP,

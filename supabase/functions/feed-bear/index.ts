@@ -124,6 +124,8 @@ function toState(u: any) {
     feeder_level: u.feeder_level || 1,
     training_level: u.training_level || 1,
     bed_level: u.bed_level || 1,
+    login_streak: u.login_streak || 0,
+    last_login_date: u.last_login_date,
     created_at: u.created_at,
   };
 }
@@ -151,9 +153,9 @@ serve(async (req: Request) => {
     if (!foodType || !FOOD[foodType]) return json({ error: "invalid food_type" }, 400);
     const food = FOOD[foodType];
 
-    const { data: user, error } = await supabase
+    const { data: user, error: userErr } = await supabase
       .from("users").select("*").eq("tg_id", tgId).maybeSingle();
-    if (error) throw error;
+    if (userErr) throw userErr;
     if (!user) return json({ error: "user not found" }, 404);
 
     // Lazy tick
@@ -196,34 +198,31 @@ serve(async (req: Request) => {
     }
     if (foodType === "ad") { user.ads_today += 1; }
 
-    await supabase.from("users").update({
+    // Save user
+    const { error: updateErr } = await supabase.from("users").update({
       honey: user.honey, satiety: user.satiety,
       last_satiety_update: user.last_satiety_update,
       free_food_at: user.free_food_at,
       ads_today: user.ads_today, ads_today_date: user.ads_today_date,
     }).eq("id", user.id);
+    if (updateErr) throw updateErr;
 
-await updateQuestProgress(user.id, "feed_bear", 1);
-await updateQuestProgress(user.id, "feed_3_times", 1);
+    // Log transaction
+    const { error: txErr } = await supabase.from("transactions").insert({
+      user_id: user.id,
+      type: `feed_${foodType}`,
+      honey_delta: -food.honeyCost,
+      satiety_delta: satGain,
+      idempotency_key: `feed_${user.id}_${foodType}_${now}`,
+    });
+    if (txErr) throw txErr;
 
-if (foodType === "ad") {
-  await updateQuestProgress(user.id, "watch_ad", 1);
-}
-
-const feedEventId = feedId; // ✅ должен быть стабильным для одного кормления
-
-const tx = {
-  user_id: user.id,
-  type: `feed_${foodType}`,
-  honey_delta: -food.honeyCost,
-  rp_delta: 0,
-  satiety_delta: satGain,
-  idempotency_key: `feed_${user.id}_${feedEventId}`, // ✅
-};
-
-const { error } = await supabase.from("transactions").insert(tx);
-if (error) throw error;
-
+    // Update quest progress
+    await updateQuestProgress(user.id, "feed_bear", 1);
+    await updateQuestProgress(user.id, "feed_3_times", 1);
+    if (foodType === "ad") {
+      await updateQuestProgress(user.id, "watch_ad", 1);
+    }
 
     return json({ success: true, state: toState(user) });
   } catch (err: any) {

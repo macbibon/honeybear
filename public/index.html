@@ -2678,6 +2678,12 @@ function renderQuests() {
 
 async function claimQuestReward(slot) {
   try {
+    // Flush pending taps before claiming
+    await flushTaps();
+    
+    // Small delay to ensure server processed
+    await new Promise(r => setTimeout(r, 300));
+    
     const res = await fetch(`${BASE_URL}/claim-quest-reward`, {
       method: 'POST',
       headers: {
@@ -2692,14 +2698,12 @@ async function claimQuestReward(slot) {
       return;
     }
 
-    // Update local state
     if (gameState) {
       gameState.honey = data.honey;
       gameState.amber = data.amber;
       renderState(gameState);
     }
 
-    // Mark quest as claimed locally
     if (questsData) {
       const q = questsData.quests.find(q => q.slot === slot);
       if (q) q.claimed = true;
@@ -2712,7 +2716,6 @@ async function claimQuestReward(slot) {
     console.error('claimQuestReward error:', e);
   }
 }
-
 // All bonus btn
 document.getElementById('allBonusBtn').addEventListener('click', async () => {
   try {
@@ -2748,9 +2751,12 @@ document.getElementById('allBonusBtn').addEventListener('click', async () => {
 });
 
 // Tap tracking for quest
-const origBearTap = document.getElementById('bearArea');
-origBearTap.addEventListener('click', () => {
-  tapCount++;
+// Tap tracking for quest
+let pendingTaps = 0;
+
+document.getElementById('bearArea').addEventListener('click', () => {
+  pendingTaps++;
+  
   // Update tap quest locally
   if (questsData) {
     const tapQuest = questsData.quests.find(q => q.type === 'tap_bear' && !q.done);
@@ -2760,18 +2766,26 @@ origBearTap.addEventListener('click', () => {
       renderQuests();
     }
   }
-  // Send to server every 5 taps
-  if (tapCount % 5 === 0) {
-    fetch(`${BASE_URL}/track-tap`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${initData}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ taps: 5 }),
-    }).catch(() => {});
+  
+  // Send to server every 3 taps
+  if (pendingTaps >= 3) {
+    flushTaps();
   }
 });
+
+function flushTaps() {
+  if (pendingTaps <= 0) return Promise.resolve();
+  const taps = pendingTaps;
+  pendingTaps = 0;
+  return fetch(`${BASE_URL}/track-tap`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${initData}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ taps }),
+  }).catch(() => {});
+}
 
 /* ==============================================================
    BOOT
