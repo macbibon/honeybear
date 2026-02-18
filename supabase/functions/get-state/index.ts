@@ -98,6 +98,9 @@ function toGameState(u: UserRow) {
     rp: u.rp,
     satiety: Math.floor(u.satiety * 100) / 100,
     last_satiety_update: u.last_satiety_update,
+    free_food_at: u.free_food_at || '1970-01-01T00:00:00Z',
+    ads_today: u.ads_today || 0,
+    ads_today_date: u.ads_today_date || new Date().toISOString().slice(0,10),
     created_at: u.created_at,
   };
 }

@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, 
+<meta name="viewport" content="width=device-width, initial-scale=1.0,
       maximum-scale=1.0, user-scalable=no" />
 <title>HoneyBear 🐻</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -53,34 +53,17 @@ html, body {
   z-index: 1000;
   transition: opacity 0.4s ease, visibility 0.4s ease;
 }
-.loading-screen.hidden {
-  opacity: 0; visibility: hidden;
-  pointer-events: none;
-}
-.loading-bear {
-  font-size: 72px;
-  animation: bounce 1.2s ease-in-out infinite;
-}
-@keyframes bounce {
+.loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+.loading-bear { font-size: 72px; animation: loadBounce 1.2s ease-in-out infinite; }
+@keyframes loadBounce {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-18px); }
 }
-.loading-text {
-  margin-top: 16px;
-  font-size: 18px;
-  color: var(--text-secondary);
-  letter-spacing: 1px;
-}
-.loading-dots::after {
-  content: '';
-  animation: dots 1.4s steps(4, end) infinite;
-}
+.loading-text { margin-top: 16px; font-size: 18px; color: var(--text-secondary); }
+.loading-dots::after { content: ''; animation: dots 1.4s steps(4, end) infinite; }
 @keyframes dots {
-  0%   { content: ''; }
-  25%  { content: '.'; }
-  50%  { content: '..'; }
-  75%  { content: '...'; }
-  100% { content: ''; }
+  0% { content: ''; } 25% { content: '.'; }
+  50% { content: '..'; } 75% { content: '...'; }
 }
 
 /* ================================================================
@@ -88,162 +71,346 @@ html, body {
    ================================================================ */
 .app {
   display: flex; flex-direction: column;
-  height: 100vh;
-  opacity: 0;
+  height: 100vh; opacity: 0;
   transition: opacity 0.5s ease;
 }
 .app.visible { opacity: 1; }
 
-/* ---- Header ---- */
-.header {
-  padding: 16px 20px 12px;
-  text-align: center;
-}
-.bear-name {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--accent);
-  text-shadow: 0 0 20px var(--accent-glow);
-}
+.header { padding: 16px 20px 12px; text-align: center; }
 
-/* ---- Content Area ---- */
 .content {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1; overflow-y: auto;
   padding: 0 16px 16px;
   -webkit-overflow-scrolling: touch;
 }
 
-/* ---- Bear Display ---- */
-.bear-display {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 200px;
-  margin: 8px 0 20px;
-  font-size: 120px;
-  animation: idle 3s ease-in-out infinite;
+/* ================================================================
+   BEAR VISUAL STATES
+   ================================================================ */
+.bear-area {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 220px; margin: 4px 0 12px;
+  position: relative; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
-@keyframes idle {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.03) rotate(-2deg); }
-  75% { transform: scale(1.03) rotate(2deg); }
+.bear-character {
+  font-size: 110px; line-height: 1;
+  transition: filter 0.5s ease, transform 0.3s ease;
+  position: relative;
+}
+.bear-name-label {
+  margin-top: 4px; font-size: 22px; font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 0 20px var(--accent-glow);
 }
 
-/* ---- Stat Cards ---- */
+/* States */
+.bear-character.happy { animation: bearHappy 1.5s ease-in-out infinite; filter: brightness(1.1) saturate(1.2); }
+.bear-character.normal { animation: bearNormal 3s ease-in-out infinite; }
+.bear-character.sad { animation: bearSad 4s ease-in-out infinite; filter: brightness(0.8) saturate(0.7); }
+.bear-character.very-sad { animation: bearVerySad 5s ease-in-out infinite; filter: brightness(0.5) saturate(0.3) grayscale(0.5); }
+.bear-character.sleeping { animation: none; filter: brightness(0.4) saturate(0.2) grayscale(0.8); transform: rotate(90deg) scaleY(0.85); }
+
+@keyframes bearHappy {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-16px) scale(1.05); }
+  60% { transform: translateY(-4px) scale(1.02); }
+}
+@keyframes bearNormal {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.02) rotate(-1deg); }
+  75% { transform: scale(1.02) rotate(1deg); }
+}
+@keyframes bearSad {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(4px) scale(0.97); }
+}
+@keyframes bearVerySad {
+  0%, 100% { transform: translateY(0) scale(0.95); }
+  50% { transform: translateY(6px) scale(0.92); }
+}
+
+/* ZZZ animation */
+.zzz-container {
+  position: absolute; top: 10px; right: -20px;
+  display: none; flex-direction: column; gap: 2px;
+}
+.sleeping .zzz-container,
+.bear-area:has(.sleeping) .zzz-container { display: flex; }
+.zzz {
+  font-size: 18px; font-weight: 700; color: #8888cc;
+  animation: zzzFloat 2s ease-in-out infinite;
+  opacity: 0;
+}
+.zzz:nth-child(1) { animation-delay: 0s; font-size: 14px; }
+.zzz:nth-child(2) { animation-delay: 0.5s; font-size: 18px; }
+.zzz:nth-child(3) { animation-delay: 1s; font-size: 22px; }
+@keyframes zzzFloat {
+  0% { opacity: 0; transform: translateY(0) translateX(0); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-30px) translateX(10px); }
+}
+
+.sleep-label {
+  display: none; margin-top: 8px;
+  font-size: 13px; color: var(--satiety-low);
+  font-weight: 600; text-align: center;
+}
+
+/* Bear tap reaction */
+.bear-character.tapped {
+  animation: bearTap 0.4s ease-out !important;
+}
+@keyframes bearTap {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.15) translateY(-12px); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Speech bubble */
+.speech-bubble {
+  position: absolute; top: -10px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-card);
+  border: 1px solid #ffffff15;
+  border-radius: 12px;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+.speech-bubble.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-8px);
+}
+
+/* ================================================================
+   STAT CARDS
+   ================================================================ */
 .stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 16px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-bottom: 12px;
 }
 .stat-card {
   background: var(--bg-card);
   border-radius: var(--radius);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 4px;
   border: 1px solid #ffffff08;
   transition: transform 0.15s ease;
 }
 .stat-card:active { transform: scale(0.97); }
-.stat-card.wide {
-  grid-column: 1 / -1;
-}
-.stat-icon {
-  font-size: 28px;
-}
-.stat-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-.stat-value {
-  font-size: 22px;
-  font-weight: 700;
-}
+.stat-card.wide { grid-column: 1 / -1; }
+.stat-icon { font-size: 24px; }
+.stat-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.8px; }
+.stat-value { font-size: 20px; font-weight: 700; }
 .stat-value.honey-val { color: var(--honey-color); }
 .stat-value.amber-val { color: var(--amber-color); }
-.stat-value.rp-val    { color: var(--rp-color); }
+.stat-value.rp-val { color: var(--rp-color); }
 
-/* ---- Satiety Bar ---- */
+/* ================================================================
+   SATIETY BAR
+   ================================================================ */
 .satiety-section {
   background: var(--bg-card);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 14px; margin-bottom: 12px;
   border: 1px solid #ffffff08;
 }
-.satiety-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-.satiety-label {
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-.satiety-percent {
-  font-size: 18px;
-  font-weight: 700;
-}
-.satiety-bar-bg {
-  width: 100%;
-  height: 14px;
-  background: #0d1117;
-  border-radius: 7px;
-  overflow: hidden;
-  position: relative;
-}
+.satiety-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.satiety-label { font-size: 13px; color: var(--text-secondary); }
+.satiety-percent { font-size: 17px; font-weight: 700; }
+.satiety-bar-bg { width: 100%; height: 12px; background: #0d1117; border-radius: 6px; overflow: hidden; }
 .satiety-bar-fill {
-  height: 100%;
-  border-radius: 7px;
-  transition: width 0.6s ease, background 0.3s ease;
+  height: 100%; border-radius: 6px;
+  transition: width 0.8s ease, background 0.4s ease;
   position: relative;
 }
 .satiety-bar-fill::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 50%;
-  background: linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 100%);
-  border-radius: 7px 7px 0 0;
+  content: ''; position: absolute; inset: 0 0 50% 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent);
+  border-radius: 6px 6px 0 0;
 }
-.satiety-hint {
-  margin-top: 8px;
-  font-size: 11px;
-  color: var(--text-muted);
-  text-align: center;
-}
+.satiety-hint { margin-top: 6px; font-size: 10px; color: var(--text-muted); text-align: center; }
 
-/* ---- Production Info ---- */
+/* ================================================================
+   PRODUCTION INFO
+   ================================================================ */
 .production-info {
-  margin-top: 16px;
   background: var(--bg-card);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 12px 14px; margin-bottom: 12px;
   border: 1px solid #ffffff08;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  display: flex; align-items: center; gap: 12px;
 }
-.production-icon { font-size: 32px; }
-.production-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.production-title {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-.production-rate {
+.production-icon { font-size: 28px; }
+.production-text { display: flex; flex-direction: column; gap: 1px; }
+.production-title { font-size: 12px; color: var(--text-secondary); }
+.production-rate { font-size: 16px; font-weight: 600; color: var(--honey-color); }
+
+/* ================================================================
+   FEED BUTTON & MENU
+   ================================================================ */
+.feed-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #f5a623, #ff8c00);
+  color: #1a1a2e;
+  border: none;
+  border-radius: var(--radius);
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 20px #f5a62344;
+}
+.feed-btn:active { transform: scale(0.97); }
+.feed-btn:disabled {
+  background: #333; color: #666;
+  box-shadow: none; cursor: default;
+}
+
+/* Feed Modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  z-index: 500;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal-overlay.show { opacity: 1; visibility: visible; }
+
+.modal-sheet {
+  width: 100%; max-width: 420px;
+  background: var(--bg-secondary);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px calc(20px + var(--safe-bottom));
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.modal-overlay.show .modal-sheet { transform: translateY(0); }
+
+.modal-handle {
+  width: 40px; height: 4px; background: #ffffff20;
+  border-radius: 2px; margin: 0 auto 16px;
+}
+.modal-title {
+  font-size: 18px; font-weight: 700;
+  text-align: center; margin-bottom: 16px;
+}
+
+.food-list { display: flex; flex-direction: column; gap: 10px; }
+
+.food-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  cursor: pointer;
+  border: 1px solid #ffffff08;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.food-item:active { transform: scale(0.98); }
+.food-item.disabled {
+  opacity: 0.35; pointer-events: none;
+}
+.food-item.loading {
+  pointer-events: none; opacity: 0.6;
+}
+.food-emoji { font-size: 32px; flex-shrink: 0; }
+.food-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.food-name { font-size: 15px; font-weight: 600; }
+.food-desc { font-size: 11px; color: var(--text-secondary); }
+.food-cost {
+  font-size: 13px; font-weight: 700;
   color: var(--honey-color);
+  flex-shrink: 0;
+}
+.food-cost.free { color: var(--satiety-full); }
+.food-cooldown { font-size: 10px; color: var(--satiety-low); }
+
+/* ================================================================
+   NAME MODAL
+   ================================================================ */
+.name-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 600;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.name-modal-overlay.show { opacity: 1; visibility: visible; }
+
+.name-modal {
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  width: 90%; max-width: 340px;
+  text-align: center;
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.name-modal-overlay.show .name-modal { transform: scale(1); }
+
+.name-modal-emoji { font-size: 56px; margin-bottom: 12px; }
+.name-modal-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.name-modal-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+
+.name-input {
+  width: 100%; padding: 12px 16px;
+  background: var(--bg-card);
+  border: 2px solid #ffffff15;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 16px; text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.name-input:focus { border-color: var(--accent); }
+.name-input::placeholder { color: var(--text-muted); }
+
+.name-submit {
+  margin-top: 16px; width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #f5a623, #ff8c00);
+  color: #1a1a2e; border: none;
+  border-radius: var(--radius-sm);
+  font-size: 16px; font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.name-submit:active { transform: scale(0.97); }
+.name-submit:disabled { background: #444; color: #777; }
+
+/* ================================================================
+   FEED PARTICLES (hearts / sparkles)
+   ================================================================ */
+.particles-container {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 400;
+  overflow: hidden;
+}
+.particle {
+  position: absolute;
+  font-size: 24px;
+  animation: particleRise 1.2s ease-out forwards;
+  opacity: 0;
+}
+@keyframes particleRise {
+  0% { opacity: 1; transform: translateY(0) scale(0.5); }
+  50% { opacity: 1; transform: translateY(-60px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-120px) scale(0.7); }
 }
 
 /* ================================================================
@@ -254,98 +421,51 @@ html, body {
   padding-bottom: var(--safe-bottom);
   background: var(--bg-secondary);
   border-top: 1px solid #ffffff0a;
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
+  display: flex; align-items: center; justify-content: space-around;
   flex-shrink: 0;
 }
 .nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  cursor: pointer;
-  padding: 6px 12px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  cursor: pointer; padding: 6px 12px;
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
   position: relative;
   -webkit-tap-highlight-color: transparent;
 }
-.nav-item.active .nav-icon {
-  transform: scale(1.15);
-}
-.nav-item.active .nav-label {
-  color: var(--accent);
-}
-.nav-item.disabled {
-  opacity: 0.35;
-  pointer-events: none;
-}
-.nav-icon {
-  font-size: 24px;
-  transition: transform 0.2s ease;
-}
+.nav-item.active .nav-icon { transform: scale(1.15); }
+.nav-item.active .nav-label { color: var(--accent); }
+.nav-item.disabled { opacity: 0.35; pointer-events: none; }
+.nav-icon { font-size: 24px; transition: transform 0.2s ease; }
 .nav-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 10px; font-weight: 600;
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: uppercase; letter-spacing: 0.5px;
   transition: color 0.2s ease;
 }
-
-/* ---- Coming soon tooltip ---- */
 .nav-item.disabled::after {
-  content: 'Soon';
-  position: absolute;
-  top: -6px; right: -4px;
-  font-size: 8px;
-  background: var(--accent);
-  color: #1a1a2e;
-  padding: 1px 5px;
-  border-radius: 6px;
-  font-weight: 700;
+  content: 'Soon'; position: absolute; top: -6px; right: -4px;
+  font-size: 8px; background: var(--accent); color: #1a1a2e;
+  padding: 1px 5px; border-radius: 6px; font-weight: 700;
 }
 
 /* ================================================================
-   ERROR
+   ERROR SCREEN
    ================================================================ */
 .error-screen {
-  display: none;
-  position: fixed; inset: 0;
+  display: none; position: fixed; inset: 0;
   background: var(--bg-primary);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  text-align: center;
-  padding: 32px;
+  flex-direction: column; align-items: center; justify-content: center;
+  z-index: 999; text-align: center; padding: 32px;
 }
-.error-screen.visible {
-  display: flex;
-}
+.error-screen.visible { display: flex; }
 .error-icon { font-size: 56px; margin-bottom: 16px; }
-.error-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.error-msg {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 24px;
-  line-height: 1.5;
-}
+.error-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.error-msg { font-size: 14px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.5; }
 .retry-btn {
-  background: var(--accent);
-  color: #1a1a2e;
-  border: none;
-  padding: 12px 32px;
-  border-radius: var(--radius-sm);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.15s ease;
+  background: var(--accent); color: #1a1a2e; border: none;
+  padding: 12px 32px; border-radius: var(--radius-sm);
+  font-size: 16px; font-weight: 700; cursor: pointer;
 }
 .retry-btn:active { transform: scale(0.95); }
 
@@ -354,21 +474,18 @@ html, body {
    ================================================================ */
 .content::-webkit-scrollbar { width: 4px; }
 .content::-webkit-scrollbar-track { background: transparent; }
-.content::-webkit-scrollbar-thumb {
-  background: #ffffff15;
-  border-radius: 2px;
-}
+.content::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 2px; }
 </style>
 </head>
 <body>
 
-<!-- ======================== LOADING ======================== -->
+<!-- ====================== LOADING ====================== -->
 <div class="loading-screen" id="loadingScreen">
   <div class="loading-bear">🐻</div>
   <div class="loading-text">Загружаем берлогу<span class="loading-dots"></span></div>
 </div>
 
-<!-- ======================== ERROR ======================== -->
+<!-- ====================== ERROR ====================== -->
 <div class="error-screen" id="errorScreen">
   <div class="error-icon">😵</div>
   <div class="error-title">Ой, ошибка!</div>
@@ -376,17 +493,49 @@ html, body {
   <button class="retry-btn" onclick="loadState()">Попробовать снова</button>
 </div>
 
-<!-- ======================== MAIN APP ======================== -->
-<div class="app" id="app">
-  <!-- Header -->
-  <div class="header">
-    <div class="bear-name" id="bearName">—</div>
+<!-- ====================== NAME MODAL ====================== -->
+<div class="name-modal-overlay" id="nameModal">
+  <div class="name-modal">
+    <div class="name-modal-emoji">🐻</div>
+    <div class="name-modal-title">Привет!</div>
+    <div class="name-modal-desc">Как назовёшь своего медведя?</div>
+    <input class="name-input" id="nameInput" type="text"
+           placeholder="Введи имя..." maxlength="20" autocomplete="off" />
+    <button class="name-submit" id="nameSubmit" disabled>Готово!</button>
   </div>
+</div>
 
-  <!-- Content: tab Bear -->
+<!-- ====================== FEED MODAL ====================== -->
+<div class="modal-overlay" id="feedModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🍽️ Покормить медведя</div>
+    <div class="food-list" id="foodList"></div>
+  </div>
+</div>
+
+<!-- ====================== PARTICLES ====================== -->
+<div class="particles-container" id="particles"></div>
+
+<!-- ====================== MAIN APP ====================== -->
+<div class="app" id="app">
+  <div class="header"></div>
+
   <div class="content" id="tabBearContent">
-    <!-- Bear character -->
-    <div class="bear-display" id="bearEmoji">🐻</div>
+    <!-- Bear -->
+    <div class="bear-area" id="bearArea">
+      <div class="speech-bubble" id="speechBubble"></div>
+      <div class="bear-character normal" id="bearChar">
+        🐻
+        <div class="zzz-container">
+          <span class="zzz">Z</span>
+          <span class="zzz">Z</span>
+          <span class="zzz">Z</span>
+        </div>
+      </div>
+      <div class="bear-name-label" id="bearName">—</div>
+      <div class="sleep-label" id="sleepLabel">💤 Уснул от голода...</div>
+    </div>
 
     <!-- Stats -->
     <div class="stats-grid">
@@ -400,11 +549,6 @@ html, body {
         <div class="stat-label">Янтарь</div>
         <div class="stat-value amber-val" id="amberValue">—</div>
       </div>
-      <div class="stat-card wide">
-        <div class="stat-icon">⚔️</div>
-        <div class="stat-label">Рейтинговые очки</div>
-        <div class="stat-value rp-val" id="rpValue">—</div>
-      </div>
     </div>
 
     <!-- Satiety -->
@@ -414,12 +558,12 @@ html, body {
         <span class="satiety-percent" id="satietyPercent">—</span>
       </div>
       <div class="satiety-bar-bg">
-        <div class="satiety-bar-fill" id="satietyBar" style="width: 0%"></div>
+        <div class="satiety-bar-fill" id="satietyBar" style="width:0%"></div>
       </div>
-      <div class="satiety-hint">−1 каждые 6 минут · влияет на добычу мёда</div>
+      <div class="satiety-hint">−1 каждые 6 мин · влияет на добычу мёда</div>
     </div>
 
-    <!-- Production rate -->
+    <!-- Production -->
     <div class="production-info">
       <div class="production-icon">⛏️</div>
       <div class="production-text">
@@ -427,209 +571,439 @@ html, body {
         <span class="production-rate" id="productionRate">— / час</span>
       </div>
     </div>
+
+    <!-- Feed button -->
+    <button class="feed-btn" id="feedBtn" style="margin-top:12px">
+      🍽️ Покормить
+    </button>
   </div>
 
-  <!-- Bottom Navigation -->
+  <!-- Navigation -->
   <nav class="bottom-nav">
     <div class="nav-item active" data-tab="bear">
-      <span class="nav-icon">🐻</span>
-      <span class="nav-label">Bear</span>
+      <span class="nav-icon">🐻</span><span class="nav-label">Bear</span>
     </div>
     <div class="nav-item disabled" data-tab="arena">
-      <span class="nav-icon">⚔️</span>
-      <span class="nav-label">Arena</span>
+      <span class="nav-icon">⚔️</span><span class="nav-label">Arena</span>
     </div>
     <div class="nav-item disabled" data-tab="league">
-      <span class="nav-icon">🏆</span>
-      <span class="nav-label">League</span>
+      <span class="nav-icon">🏆</span><span class="nav-label">League</span>
     </div>
     <div class="nav-item disabled" data-tab="shop">
-      <span class="nav-icon">🛒</span>
-      <span class="nav-label">Shop</span>
+      <span class="nav-icon">🛒</span><span class="nav-label">Shop</span>
     </div>
     <div class="nav-item disabled" data-tab="more">
-      <span class="nav-icon">⚙️</span>
-      <span class="nav-label">More</span>
+      <span class="nav-icon">⚙️</span><span class="nav-label">More</span>
     </div>
   </nav>
 </div>
 
 <script>
 /* ==============================================================
-   КОНФИГУРАЦИЯ
+   CONFIG
    ============================================================== */
-// ⬇️ Замените на URL вашей Edge Function
-const EDGE_FUNCTION_URL = 'https://xqaywuuaahcsjdipmgdg.supabase.co/functions/v1/get-state';
+const BASE_URL = 'https://xqaywuuaahcsjdipmgdg.supabase.co/functions/v1';
+const GET_STATE_URL  = `${BASE_URL}/get-state`;
+const FEED_BEAR_URL  = `${BASE_URL}/feed-bear`;
 
 /* ==============================================================
-   TELEGRAM WEBAPP
+   TELEGRAM
    ============================================================== */
 const tg = window.Telegram?.WebApp;
 let initData = '';
-
 if (tg) {
-  tg.ready();
-  tg.expand();
+  tg.ready(); tg.expand();
   tg.setHeaderColor('#1a1a2e');
   tg.setBackgroundColor('#1a1a2e');
   initData = tg.initData || '';
 }
 
 /* ==============================================================
-   STATE MANAGEMENT
+   STATE
    ============================================================== */
 let gameState = null;
-let satietyTickerInterval = null;
+let tickerInterval = null;
+let isFirstVisit = false;
 
+/* ==============================================================
+   BEAR PHRASES
+   ============================================================== */
+const PHRASES = {
+  happy: ['Мне отлично! 🍯', 'Обожаю мёд!', 'Ррр! 💪', 'Я сильный!', 'Дай обнимашку! 🤗'],
+  normal: ['Привет! 👋', 'Не плохо...', 'Хочу мёда 🍯', 'Поиграем?'],
+  sad: ['Я голодный...', 'Покорми меня 😢', 'Мне грустно...', 'Хочу кушать...'],
+  very_sad: ['Помоги...', 'Я засыпаю... 😴', 'Совсем нет сил...'],
+  sleeping: ['Zzz...', '💤', '...'],
+};
+
+function getMood(satiety) {
+  if (satiety <= 0) return 'sleeping';
+  if (satiety < 20) return 'very_sad';
+  if (satiety < 50) return 'sad';
+  if (satiety < 80) return 'normal';
+  return 'happy';
+}
+
+function getRandomPhrase(mood) {
+  const list = PHRASES[mood] || PHRASES.normal;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+/* ==============================================================
+   LOAD STATE
+   ============================================================== */
 async function loadState() {
-  // Показываем загрузку
-  showLoading();
-  hideError();
-
+  showLoading(); hideError();
   try {
-    const res = await fetch(EDGE_FUNCTION_URL, {
+    const res = await fetch(GET_STATE_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${initData}`,
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Authorization': `Bearer ${initData}`, 'Content-Type': 'application/json' },
     });
-
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      throw new Error(body.error || `HTTP ${res.status}`);
+      const b = await res.json().catch(() => ({}));
+      throw new Error(b.error || `HTTP ${res.status}`);
+    }
+    gameState = await res.json();
+
+    // Check if first visit (default name pattern)
+    if (gameState.bear_name.endsWith("'s Bear") || gameState.bear_name === 'Bear' || gameState.bear_name === 'Медведь') {
+      isFirstVisit = true;
     }
 
-    gameState = await res.json();
     renderState(gameState);
-    startSatietyTicker();
+    startTicker();
     hideLoading();
     showApp();
+
+    if (isFirstVisit) {
+      setTimeout(() => showNameModal(), 500);
+    }
   } catch (err) {
     console.error('loadState error:', err);
-    hideLoading();
-    showError(err.message);
+    hideLoading(); showError(err.message);
   }
 }
 
 /* ==============================================================
-   RENDERING
+   FEED
+   ============================================================== */
+async function feedBear(foodType) {
+  const items = document.querySelectorAll('.food-item');
+  items.forEach(i => i.classList.add('loading'));
+
+  try {
+    const res = await fetch(FEED_BEAR_URL, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${initData}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ food_type: foodType }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      tg?.showAlert?.(data.error || 'Ошибка кормления');
+      return;
+    }
+
+    gameState = data.state;
+    renderState(gameState);
+    closeFeedModal();
+    spawnParticles();
+
+    // Haptic feedback
+    tg?.HapticFeedback?.impactOccurred?.('medium');
+
+  } catch (err) {
+    console.error('feed error:', err);
+    tg?.showAlert?.('Ошибка сети');
+  } finally {
+    items.forEach(i => i.classList.remove('loading'));
+  }
+}
+
+/* ==============================================================
+   RENDER
    ============================================================== */
 function renderState(s) {
-  // Name
   document.getElementById('bearName').textContent = s.bear_name;
+  document.getElementById('honeyValue').textContent = formatNum(s.honey);
+  document.getElementById('amberValue').textContent = formatNum(s.amber);
 
-  // Stats
-  document.getElementById('honeyValue').textContent = formatNumber(s.honey);
-  document.getElementById('amberValue').textContent = formatNumber(s.amber);
-  document.getElementById('rpValue').textContent = formatNumber(s.rp);
-
-  // Satiety
   updateSatietyUI(s.satiety);
+  updateBearVisual(s.satiety);
 
-  // Production rate
   const rate = 60 * (s.satiety / 100);
-  document.getElementById('productionRate').textContent = 
-    `${rate.toFixed(1)} 🍯 / час`;
+  document.getElementById('productionRate').textContent = `${rate.toFixed(1)} 🍯/час`;
 
-  // Bear mood based on satiety
-  const bear = document.getElementById('bearEmoji');
-  if (s.satiety > 70) bear.textContent = '🐻';
-  else if (s.satiety > 30) bear.textContent = '🐻';
-  else bear.textContent = '🐻';
-  // In future: different bear images based on satiety
+  // Disable feed button if sleeping
+  document.getElementById('feedBtn').disabled = false;
+}
+
+function updateBearVisual(satiety) {
+  const bear = document.getElementById('bearChar');
+  const sleepLabel = document.getElementById('sleepLabel');
+  const mood = getMood(satiety);
+
+  bear.className = 'bear-character ' + mood.replace('_', '-');
+  sleepLabel.style.display = mood === 'sleeping' ? 'block' : 'none';
 }
 
 function updateSatietyUI(satiety) {
-  const percent = Math.max(0, Math.min(100, satiety));
+  const p = Math.max(0, Math.min(100, satiety));
   const bar = document.getElementById('satietyBar');
-  const text = document.getElementById('satietyPercent');
+  const txt = document.getElementById('satietyPercent');
+  txt.textContent = `${Math.floor(p)}%`;
+  bar.style.width = `${p}%`;
 
-  text.textContent = `${Math.floor(percent)}%`;
-  bar.style.width = `${percent}%`;
-
-  // Color based on level
-  if (percent > 60) {
-    bar.style.background = `linear-gradient(90deg, #43a047, #66bb6a)`;
-    text.style.color = 'var(--satiety-full)';
-  } else if (percent > 25) {
-    bar.style.background = `linear-gradient(90deg, #ef6c00, #ffa726)`;
-    text.style.color = 'var(--satiety-mid)';
+  if (p > 60) {
+    bar.style.background = 'linear-gradient(90deg, #43a047, #66bb6a)';
+    txt.style.color = 'var(--satiety-full)';
+  } else if (p > 25) {
+    bar.style.background = 'linear-gradient(90deg, #ef6c00, #ffa726)';
+    txt.style.color = 'var(--satiety-mid)';
   } else {
-    bar.style.background = `linear-gradient(90deg, #c62828, #ef5350)`;
-    text.style.color = 'var(--satiety-low)';
+    bar.style.background = 'linear-gradient(90deg, #c62828, #ef5350)';
+    txt.style.color = 'var(--satiety-low)';
   }
 }
 
 /* ==============================================================
-   CLIENT-SIDE TICKER (визуальное обновление)
+   TICKER
    ============================================================== */
-function startSatietyTicker() {
-  if (satietyTickerInterval) clearInterval(satietyTickerInterval);
-
-  satietyTickerInterval = setInterval(() => {
+function startTicker() {
+  if (tickerInterval) clearInterval(tickerInterval);
+  tickerInterval = setInterval(() => {
     if (!gameState) return;
-
     const now = Date.now();
-    const lastUpdate = new Date(gameState.last_satiety_update).getTime();
-    const elapsed = now - lastUpdate;
-    const ticksElapsed = Math.floor(elapsed / (6 * 60 * 1000));
-    const currentSatiety = Math.max(0, gameState.satiety - ticksElapsed);
+    const last = new Date(gameState.last_satiety_update).getTime();
+    const elapsed = now - last;
+    const ticks = Math.floor(elapsed / (6 * 60 * 1000));
+    const curSat = Math.max(0, gameState.satiety - ticks);
 
-    updateSatietyUI(currentSatiety);
+    updateSatietyUI(curSat);
+    updateBearVisual(curSat);
 
-    // Update production rate
-    const rate = 60 * (currentSatiety / 100);
-    document.getElementById('productionRate').textContent =
-      `${rate.toFixed(1)} 🍯 / час`;
+    const rate = 60 * (curSat / 100);
+    document.getElementById('productionRate').textContent = `${rate.toFixed(1)} 🍯/час`;
 
-    // Update honey (visual only)
-    const avgSat = (gameState.satiety + currentSatiety) / 2;
-    const elapsedHours = elapsed / (1000 * 60 * 60);
-    const honeyEarned = 60 * (avgSat / 100) * elapsedHours;
-    const displayHoney = gameState.honey + honeyEarned;
-    document.getElementById('honeyValue').textContent = 
-      formatNumber(displayHoney);
+    const avg = (gameState.satiety + curSat) / 2;
+    const hrs = elapsed / 3600000;
+    const earned = 60 * (avg / 100) * hrs;
+    document.getElementById('honeyValue').textContent = formatNum(gameState.honey + earned);
+  }, 3000);
+}
 
-  }, 5000); // каждые 5 секунд
+/* ==============================================================
+   BEAR TAP
+   ============================================================== */
+document.getElementById('bearArea').addEventListener('click', () => {
+  const bear = document.getElementById('bearChar');
+  const bubble = document.getElementById('speechBubble');
+  const satiety = getCurrentSatiety();
+  const mood = getMood(satiety);
+
+  // Tap animation
+  bear.classList.remove('tapped');
+  void bear.offsetWidth;
+  bear.classList.add('tapped');
+  setTimeout(() => bear.classList.remove('tapped'), 400);
+
+  // Speech bubble
+  bubble.textContent = getRandomPhrase(mood);
+  bubble.classList.add('show');
+  setTimeout(() => bubble.classList.remove('show'), 2000);
+
+  // Haptic
+  tg?.HapticFeedback?.impactOccurred?.('light');
+});
+
+function getCurrentSatiety() {
+  if (!gameState) return 100;
+  const elapsed = Date.now() - new Date(gameState.last_satiety_update).getTime();
+  const ticks = Math.floor(elapsed / (6 * 60 * 1000));
+  return Math.max(0, gameState.satiety - ticks);
+}
+
+/* ==============================================================
+   FEED MODAL
+   ============================================================== */
+document.getElementById('feedBtn').addEventListener('click', openFeedModal);
+
+function openFeedModal() {
+  const modal = document.getElementById('feedModal');
+  const list = document.getElementById('foodList');
+  list.innerHTML = '';
+
+  const foods = [
+    {
+      type: 'berries', emoji: '🫐', name: 'Ягоды',
+      desc: '+15 сытости', cost: 'Бесплатно',
+      free: true, cooldown: getCooldownText(),
+      disabled: !canUseBerries(),
+    },
+    {
+      type: 'honey_food', emoji: '🍯', name: 'Медовые соты',
+      desc: '+25 сытости', cost: '30 🍯',
+      free: false, disabled: gameState.honey < 30,
+    },
+    {
+      type: 'fish', emoji: '🐟', name: 'Рыба',
+      desc: '+50 сытости', cost: '80 🍯',
+      free: false, disabled: gameState.honey < 80,
+    },
+    {
+      type: 'ad', emoji: '📺', name: 'Реклама',
+      desc: '+30 сытости', cost: `Бесплатно (${getAdsLeft()}/2)`,
+      free: true, disabled: getAdsLeft() <= 0,
+    },
+  ];
+
+  foods.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'food-item' + (f.disabled ? ' disabled' : '');
+    item.innerHTML = `
+      <div class="food-emoji">${f.emoji}</div>
+      <div class="food-info">
+        <div class="food-name">${f.name}</div>
+        <div class="food-desc">${f.desc}</div>
+        ${f.cooldown ? `<div class="food-cooldown">${f.cooldown}</div>` : ''}
+      </div>
+      <div class="food-cost ${f.free ? 'free' : ''}">${f.cost}</div>
+    `;
+    if (!f.disabled) {
+      item.addEventListener('click', () => feedBear(f.type));
+    }
+    list.appendChild(item);
+  });
+
+  modal.classList.add('show');
+}
+
+function closeFeedModal() {
+  document.getElementById('feedModal').classList.remove('show');
+}
+
+// Close on overlay click
+document.getElementById('feedModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeFeedModal();
+});
+
+function canUseBerries() {
+  if (!gameState?.free_food_at) return true;
+  return Date.now() >= new Date(gameState.free_food_at).getTime();
+}
+
+function getCooldownText() {
+  if (!gameState?.free_food_at) return '';
+  const ready = new Date(gameState.free_food_at).getTime();
+  const diff = ready - Date.now();
+  if (diff <= 0) return '';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.ceil((diff % 3600000) / 60000);
+  return `⏳ Доступно через ${h}ч ${m}м`;
+}
+
+function getAdsLeft() {
+  if (!gameState) return 2;
+  const today = new Date().toISOString().slice(0, 10);
+  if (gameState.ads_today_date !== today) return 2;
+  return Math.max(0, 2 - (gameState.ads_today || 0));
+}
+
+/* ==============================================================
+   NAME MODAL
+   ============================================================== */
+const nameInput = document.getElementById('nameInput');
+const nameSubmit = document.getElementById('nameSubmit');
+
+nameInput.addEventListener('input', () => {
+  nameSubmit.disabled = nameInput.value.trim().length < 1;
+});
+
+nameSubmit.addEventListener('click', async () => {
+  const name = nameInput.value.trim();
+  if (!name) return;
+  nameSubmit.disabled = true;
+  nameSubmit.textContent = '...';
+
+  try {
+    // Call get-state with name update (we'll piggyback via a simple approach:
+    // update name via a dedicated call or just set it)
+    // For now, update directly via edge function pattern
+    const res = await fetch(`${BASE_URL}/set-name`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${initData}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bear_name: name }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.state) gameState = data.state;
+      gameState.bear_name = name;
+      renderState(gameState);
+    }
+  } catch (e) {
+    console.error('set name error:', e);
+    // Fallback: just update locally
+    gameState.bear_name = name;
+    renderState(gameState);
+  }
+
+  closeNameModal();
+});
+
+function showNameModal() {
+  document.getElementById('nameModal').classList.add('show');
+  setTimeout(() => nameInput.focus(), 400);
+}
+function closeNameModal() {
+  document.getElementById('nameModal').classList.remove('show');
+}
+
+/* ==============================================================
+   PARTICLES
+   ============================================================== */
+function spawnParticles() {
+  const container = document.getElementById('particles');
+  const emojis = ['❤️', '✨', '⭐', '💛', '🌟', '💚'];
+  for (let i = 0; i < 12; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    p.style.left = (20 + Math.random() * 60) + '%';
+    p.style.top = (30 + Math.random() * 20) + '%';
+    p.style.animationDelay = (Math.random() * 0.5) + 's';
+    p.style.fontSize = (18 + Math.random() * 14) + 'px';
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1800);
+  }
 }
 
 /* ==============================================================
    HELPERS
    ============================================================== */
-function formatNumber(n) {
-  if (n === undefined || n === null) return '0';
-  const num = Number(n);
-  if (num >= 1_000_000) return (num / 1_000_000).toFixed(2) + 'M';
-  if (num >= 1_000) return (num / 1_000).toFixed(1) + 'K';
-  return Math.floor(num).toLocaleString('ru-RU');
+function formatNum(n) {
+  if (n == null) return '0';
+  const v = Number(n);
+  if (v >= 1e6) return (v / 1e6).toFixed(2) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return Math.floor(v).toLocaleString('ru-RU');
 }
 
-function showLoading() {
-  document.getElementById('loadingScreen').classList.remove('hidden');
-}
-function hideLoading() {
-  document.getElementById('loadingScreen').classList.add('hidden');
-}
-function showApp() {
-  document.getElementById('app').classList.add('visible');
-}
+function showLoading() { document.getElementById('loadingScreen').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loadingScreen').classList.add('hidden'); }
+function showApp() { document.getElementById('app').classList.add('visible'); }
 function showError(msg) {
   document.getElementById('errorMsg').textContent = msg || 'Неизвестная ошибка';
   document.getElementById('errorScreen').classList.add('visible');
 }
-function hideError() {
-  document.getElementById('errorScreen').classList.remove('visible');
-}
+function hideError() { document.getElementById('errorScreen').classList.remove('visible'); }
 
 /* ==============================================================
-   NAV (пока только Bear активен)
+   NAV
    ============================================================== */
 document.querySelectorAll('.nav-item:not(.disabled)').forEach(item => {
   item.addEventListener('click', () => {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
     item.classList.add('active');
-    // В будущем — переключение табов
   });
 });
 
@@ -637,7 +1011,6 @@ document.querySelectorAll('.nav-item:not(.disabled)').forEach(item => {
    BOOT
    ============================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-  // Небольшая задержка для плавности
   setTimeout(() => loadState(), 300);
 });
 </script>
