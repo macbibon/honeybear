@@ -48,6 +48,36 @@ interface FoodDef {
   checkLimit: (u: any) => { ok: boolean; reason?: string };
 }
 
+async function updateQuestProgress(userId: string, questType: string, increment: number) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: dq } = await supabase
+      .from("daily_quests")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("date", today)
+      .maybeSingle();
+    if (!dq) return;
+
+    for (let i = 1; i <= 3; i++) {
+      if (dq[`quest_${i}_type`] === questType && !dq[`quest_${i}_done`]) {
+        const newProg = Math.min(
+          dq[`quest_${i}_progress`] + increment,
+          dq[`quest_${i}_target`]
+        );
+        const done = newProg >= dq[`quest_${i}_target`];
+        await supabase.from("daily_quests").update({
+          [`quest_${i}_progress`]: newProg,
+          [`quest_${i}_done`]: done,
+        }).eq("id", dq.id);
+        break;
+      }
+    }
+  } catch (e) {
+    console.error("updateQuestProgress error:", e);
+  }
+}
+
 const FOOD: Record<string, FoodDef> = {
   berries: {
     baseSatiety: 15, honeyCost: 0,
@@ -173,11 +203,27 @@ serve(async (req: Request) => {
       ads_today: user.ads_today, ads_today_date: user.ads_today_date,
     }).eq("id", user.id);
 
-    await supabase.from("transactions").insert({
-      user_id: user.id, type: `feed_${foodType}`,
-      honey_delta: -food.honeyCost, satiety_delta: satGain,
-      idempotency_key: `feed_${user.id}_${foodType}_${Date.now()}`,
-    });
+await updateQuestProgress(user.id, "feed_bear", 1);
+await updateQuestProgress(user.id, "feed_3_times", 1);
+
+if (foodType === "ad") {
+  await updateQuestProgress(user.id, "watch_ad", 1);
+}
+
+const feedEventId = feedId; // ✅ должен быть стабильным для одного кормления
+
+const tx = {
+  user_id: user.id,
+  type: `feed_${foodType}`,
+  honey_delta: -food.honeyCost,
+  rp_delta: 0,
+  satiety_delta: satGain,
+  idempotency_key: `feed_${user.id}_${feedEventId}`, // ✅
+};
+
+const { error } = await supabase.from("transactions").insert(tx);
+if (error) throw error;
+
 
     return json({ success: true, state: toState(user) });
   } catch (err: any) {

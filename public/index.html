@@ -1192,6 +1192,269 @@ html, body {
 
 .retry-btn:active { transform: scale(0.95); }
 
+
+/* ================================================================
+   DAILY QUESTS & STREAK
+   ================================================================ */
+.quests-section {
+  padding: 8px 0;
+}
+
+/* Streak display */
+.streak-card {
+  background: linear-gradient(135deg, #1f2b47, #2a1a3e);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px solid #ffffff10;
+  text-align: center;
+}
+
+.streak-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.streak-fire-big { font-size: 28px; }
+
+.streak-day-label {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.streak-reward-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.streak-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: #0d1117;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.streak-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--accent), #ff6f00);
+  transition: width 0.8s ease;
+}
+
+.streak-milestones {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.streak-milestones span.reached {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Login reward popup */
+.login-reward-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+  border-radius: 12px;
+  padding: 12px 20px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 450;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  pointer-events: none;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(46, 125, 50, 0.4);
+}
+
+.login-reward-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Quest cards */
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.quest-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid #ffffff08;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: transform 0.15s ease;
+}
+
+.quest-card.completed {
+  border-color: #2e7d3233;
+}
+
+.quest-card.claimed {
+  opacity: 0.5;
+}
+
+.quest-emoji {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.quest-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.quest-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quest-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quest-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: #0d1117;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.quest-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.5s ease;
+}
+
+.quest-progress-fill.done {
+  background: var(--satiety-full);
+}
+
+.quest-progress-text {
+  font-size: 10px;
+  color: var(--text-muted);
+  min-width: 32px;
+  text-align: right;
+}
+
+.quest-reward-label {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.quest-claim-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.quest-claim-btn:active { transform: scale(0.95); }
+
+.quest-claim-btn.ready {
+  background: linear-gradient(135deg, #2e7d32, #43a047);
+  color: #fff;
+  box-shadow: 0 2px 10px #2e7d3244;
+}
+
+.quest-claim-btn.pending {
+  background: #333;
+  color: #666;
+  cursor: default;
+}
+
+.quest-claim-btn.done {
+  background: #1a3a1a;
+  color: #4caf50;
+  cursor: default;
+}
+
+/* All bonus */
+.all-bonus-card {
+  background: linear-gradient(135deg, #1f2b47, #2a3a57);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid #ffffff10;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.all-bonus-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.all-bonus-reward {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.all-bonus-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.all-bonus-btn:active { transform: scale(0.95); }
+
+.all-bonus-btn.ready {
+  background: linear-gradient(135deg, #f5a623, #ff8c00);
+  color: #1a1a2e;
+}
+
+.all-bonus-btn.locked {
+  background: #333;
+  color: #666;
+  cursor: default;
+}
+
+.all-bonus-btn.claimed {
+  background: #1a3a1a;
+  color: #4caf50;
+  cursor: default;
+}
+
+.quests-loading {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
 /* ================================================================
    SCROLLBAR
    ================================================================ */
@@ -1292,6 +1555,9 @@ html, body {
 <!-- ======================== PARTICLES ======================== -->
 <div class="particles-container" id="particles"></div>
 
+<!-- ======================== LOGIN REWARD TOAST ======================== -->
+<div class="login-reward-toast" id="loginRewardToast"></div>
+
 <!-- ======================== MAIN APP ======================== -->
 <div class="app" id="app">
   <div class="header"></div>
@@ -1355,30 +1621,71 @@ html, body {
       <div class="upgrade-list" id="upgradeList"></div>
     </div>
 
-    <!-- ======== TAB: Arena ======== -->
-    <div class="tab-content" id="tabArena">
-      <div class="arena-home">
-        <div class="arena-title">⚔️ Арена</div>
-        <div class="arena-subtitle">Сражайся с другими медведями!</div>
+   <!-- ======== TAB: Arena ======== -->
+<div class="tab-content" id="tabArena">
+  <div class="arena-home">
+    <div class="arena-title">⚔️ Арена</div>
+    <div class="arena-subtitle">Сражайся с другими медведями!</div>
 
-        <div class="arena-streak-display">
-          <div class="streak-label">Серия побед</div>
-          <div>
-            <span class="streak-value" id="arenaStreak">0</span>
-            <span class="streak-fire" id="streakFire"></span>
-          </div>
-        </div>
-
-        <div class="arena-rp-display">
-          <span class="arena-rp-label">⚔️ Рейтинг:</span>
-          <span class="arena-rp-value" id="arenaRp">0</span>
-        </div>
-
-        <button class="arena-enter-btn" id="arenaEnterBtn">⚔️ В бой! (20 🍯)</button>
-        <div class="arena-cost-hint">Победа: +50🍯 +15RP · Поражение: +5🍯 +2RP</div>
+    <div class="arena-streak-display">
+      <div class="streak-label">Серия побед</div>
+      <div>
+        <span class="streak-value" id="arenaStreak">0</span>
+        <span class="streak-fire" id="streakFire"></span>
       </div>
     </div>
+
+    <div class="arena-rp-display">
+      <span class="arena-rp-label">⚔️ Рейтинг:</span>
+      <span class="arena-rp-value" id="arenaRp">0</span>
+    </div>
+
+    <button class="arena-enter-btn" id="arenaEnterBtn">⚔️ В бой! (20 🍯)</button>
+    <div class="arena-cost-hint">Победа: +50🍯 +15RP · Поражение: +5🍯 +2RP</div>
   </div>
+</div> <!-- ✅ ВОТ ЭТОГО ЗАКРЫТИЯ НЕ ХВАТАЛО -->
+
+
+<!-- ======== TAB: More (Quests) ======== -->
+<div class="tab-content" id="tabMore">
+  <div class="quests-section">
+    <div class="upgrades-title">🔥 Ежедневный вход</div>
+
+    <div class="streak-card" id="streakCard">
+      <div class="streak-top">
+        <span class="streak-fire-big">🔥</span>
+        <span class="streak-day-label" id="streakDayLabel">День 1</span>
+      </div>
+      <div class="streak-reward-text" id="streakRewardText">Сегодня: +50 🍯</div>
+      <div class="streak-bar-bg">
+        <div class="streak-bar-fill" id="streakBarFill" style="width:0%"></div>
+      </div>
+      <div class="streak-milestones">
+        <span id="sm1">1</span>
+        <span id="sm3">3</span>
+        <span id="sm5">5</span>
+        <span id="sm7">7</span>
+        <span id="sm14">14</span>
+        <span id="sm30">30</span>
+      </div>
+    </div>
+
+    <div class="upgrades-title">📋 Ежедневные квесты</div>
+
+    <div class="quest-list" id="questList">
+      <div class="quests-loading">Загрузка квестов...</div>
+    </div>
+
+    <div class="all-bonus-card" id="allBonusCard">
+      <div class="all-bonus-title">✨ Бонус за все квесты</div>
+      <div class="all-bonus-reward">+100 🍯 + 3 💎</div>
+      <button class="all-bonus-btn locked" id="allBonusBtn" disabled>
+        Выполни все 3 квеста
+      </button>
+    </div>
+  </div>
+</div>
+
 
   <!-- Navigation -->
   <nav class="bottom-nav">
@@ -1398,10 +1705,10 @@ html, body {
       <span class="nav-icon">🛒</span>
       <span class="nav-label">Shop</span>
     </div>
-    <div class="nav-item disabled" data-tab="more">
-      <span class="nav-icon">⚙️</span>
-      <span class="nav-label">More</span>
-    </div>
+    <div class="nav-item" data-tab="more">
+  <span class="nav-icon">⚙️</span>
+  <span class="nav-label">More</span>
+</div>
   </nav>
 </div>
 
@@ -1582,6 +1889,7 @@ function getCurrentSatiety() {
 async function loadState() {
   showLoading();
   hideError();
+
   try {
     const res = await fetch(`${BASE_URL}/get-state`, {
       method: 'POST',
@@ -1590,27 +1898,50 @@ async function loadState() {
         'Content-Type': 'application/json',
       },
     });
+
     if (!res.ok) {
       const b = await res.json().catch(() => ({}));
       throw new Error(b.error || `HTTP ${res.status}`);
     }
+
     gameState = await res.json();
+
     renderState(gameState);
+
+    // ⚠️ защита от повторного запуска тикера (если у тебя есть tickerInterval)
+    // if (!window.__tickerStarted) { startTicker(); window.__tickerStarted = true; }
     startTicker();
+
     hideLoading();
     showApp();
 
-    if (gameState.bear_name.endsWith("'s Bear") ||
-        gameState.bear_name === 'Bear' ||
-        gameState.bear_name === 'Медведь') {
+    // Show login reward if present
+    if (gameState.login_reward) {
+      setTimeout(() => showLoginReward(gameState.login_reward), 800);
+    }
+
+    // Render streak
+    renderStreak(gameState.login_streak || 0);
+
+    // Load quests
+    loadQuests();
+
+    // First visit check
+    const name = (gameState.bear_name || "").trim();
+    if (
+      name.endsWith("'s Bear") ||
+      name === "Bear" ||
+      name === "Медведь"
+    ) {
       setTimeout(() => showNameModal(), 500);
     }
   } catch (err) {
     console.error('loadState error:', err);
     hideLoading();
-    showError(err.message);
+    showError(err.message || "Unknown error");
   }
 }
+
 
 /* ==============================================================
    RENDER
@@ -1638,6 +1969,8 @@ function renderState(s) {
   document.getElementById('arenaEnterBtn').disabled = s.honey < 20;
 
   renderUpgrades(s);
+// Streak (если таб More уже виден)
+  renderStreak(s.login_streak || 0);
 }
 
 function updateBearVisual(satiety) {
@@ -2199,6 +2532,246 @@ function showError(msg) {
   document.getElementById('errorScreen').classList.add('visible');
 }
 function hideError()    { document.getElementById('errorScreen').classList.remove('visible'); }
+/* ==============================================================
+   DAILY QUESTS & STREAK
+   ============================================================== */
+const STREAK_MILESTONES = [1, 2, 3, 5, 7, 14, 30];
+const STREAK_REWARDS_CLIENT = {
+  1: { honey: 50, amber: 0 },
+  2: { honey: 75, amber: 0 },
+  3: { honey: 100, amber: 2 },
+  5: { honey: 200, amber: 5 },
+  7: { honey: 500, amber: 10 },
+  14: { honey: 1000, amber: 20 },
+  30: { honey: 2000, amber: 50 },
+};
+
+let questsData = null;
+let tapCount = 0;
+
+// Show login reward toast
+function showLoginReward(reward) {
+  const toast = document.getElementById('loginRewardToast');
+  let text = `🔥 День ${reward.streak}! +${reward.honey} 🍯`;
+  if (reward.amber > 0) text += ` +${reward.amber} 💎`;
+  toast.textContent = text;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 3000);
+  spawnParticles();
+}
+
+// Render streak card
+function renderStreak(streak) {
+  document.getElementById('streakDayLabel').textContent = `День ${streak}`;
+
+  const reward = STREAK_REWARDS_CLIENT[streak] || { honey: 50, amber: 0 };
+  let rewardText = `Сегодня: +${reward.honey} 🍯`;
+  if (reward.amber > 0) rewardText += ` + ${reward.amber} 💎`;
+  document.getElementById('streakRewardText').textContent = rewardText;
+
+  // Next milestone
+  const nextMilestone = STREAK_MILESTONES.find(m => m > streak) || 30;
+  const prevMilestone = [...STREAK_MILESTONES].reverse().find(m => m <= streak) || 1;
+  const range = nextMilestone - prevMilestone;
+  const progress = range > 0 ? ((streak - prevMilestone) / range) * 100 : 100;
+  document.getElementById('streakBarFill').style.width = `${Math.min(100, progress)}%`;
+
+  // Milestone labels
+  STREAK_MILESTONES.forEach(m => {
+    const el = document.getElementById(`sm${m}`);
+    if (el) {
+      el.classList.toggle('reached', streak >= m);
+    }
+  });
+}
+
+// Load quests
+async function loadQuests() {
+  try {
+    const res = await fetch(`${BASE_URL}/get-daily-quests`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${initData}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    if (!res.ok) return;
+    questsData = await res.json();
+    renderQuests();
+    renderStreak(questsData.login_streak || gameState?.login_streak || 0);
+  } catch (e) {
+    console.error('loadQuests error:', e);
+  }
+}
+
+function renderQuests() {
+  if (!questsData) return;
+  const list = document.getElementById('questList');
+  list.innerHTML = '';
+
+  questsData.quests.forEach(q => {
+    const card = document.createElement('div');
+    card.className = 'quest-card' +
+      (q.done ? ' completed' : '') +
+      (q.claimed ? ' claimed' : '');
+
+    const pct = q.target > 0 ? Math.min(100, (q.progress / q.target) * 100) : 0;
+    const rewardText = `${q.reward.honey} 🍯` +
+      (q.reward.amber > 0 ? ` + ${q.reward.amber} 💎` : '');
+
+    let btnClass, btnText, btnDisabled;
+    if (q.claimed) {
+      btnClass = 'done'; btnText = '✓'; btnDisabled = true;
+    } else if (q.done) {
+      btnClass = 'ready'; btnText = 'Забрать'; btnDisabled = false;
+    } else {
+      btnClass = 'pending'; btnText = `${q.progress}/${q.target}`; btnDisabled = true;
+    }
+
+    card.innerHTML = `
+      <div class="quest-emoji">${q.emoji}</div>
+      <div class="quest-info">
+        <div class="quest-name">${q.name}</div>
+        <div class="quest-progress-row">
+          <div class="quest-progress-bar">
+            <div class="quest-progress-fill ${q.done ? 'done' : ''}"
+                 style="width:${pct}%"></div>
+          </div>
+          <span class="quest-progress-text">${q.progress}/${q.target}</span>
+        </div>
+        <div class="quest-reward-label">🎁 ${rewardText}</div>
+      </div>
+      <button class="quest-claim-btn ${btnClass}" ${btnDisabled ? 'disabled' : ''}>
+        ${btnText}
+      </button>
+    `;
+
+    if (q.done && !q.claimed) {
+      card.querySelector('.quest-claim-btn').addEventListener('click', () => {
+        claimQuestReward(q.slot);
+      });
+    }
+
+    list.appendChild(card);
+  });
+
+  // All bonus
+  const allDone = questsData.quests.every(q => q.done);
+  const allClaimed = questsData.quests.every(q => q.claimed);
+  const bonusClaimed = questsData.all_bonus_claimed;
+  const btn = document.getElementById('allBonusBtn');
+
+  if (bonusClaimed) {
+    btn.className = 'all-bonus-btn claimed';
+    btn.textContent = '✓ Получено';
+    btn.disabled = true;
+  } else if (allDone && allClaimed) {
+    btn.className = 'all-bonus-btn ready';
+    btn.textContent = '🎁 Забрать бонус!';
+    btn.disabled = false;
+  } else {
+    btn.className = 'all-bonus-btn locked';
+    btn.textContent = 'Выполни все 3 квеста';
+    btn.disabled = true;
+  }
+}
+
+async function claimQuestReward(slot) {
+  try {
+    const res = await fetch(`${BASE_URL}/claim-quest-reward`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${initData}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ slot }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      tg?.showAlert?.(data.error || 'Ошибка');
+      return;
+    }
+
+    // Update local state
+    if (gameState) {
+      gameState.honey = data.honey;
+      gameState.amber = data.amber;
+      renderState(gameState);
+    }
+
+    // Mark quest as claimed locally
+    if (questsData) {
+      const q = questsData.quests.find(q => q.slot === slot);
+      if (q) q.claimed = true;
+      renderQuests();
+    }
+
+    spawnParticles();
+    tg?.HapticFeedback?.notificationOccurred?.('success');
+  } catch (e) {
+    console.error('claimQuestReward error:', e);
+  }
+}
+
+// All bonus btn
+document.getElementById('allBonusBtn').addEventListener('click', async () => {
+  try {
+    const res = await fetch(`${BASE_URL}/claim-all-bonus`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${initData}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      tg?.showAlert?.(data.error || 'Ошибка');
+      return;
+    }
+
+    if (gameState) {
+      gameState.honey = data.honey;
+      gameState.amber = data.amber;
+      renderState(gameState);
+    }
+
+    if (questsData) {
+      questsData.all_bonus_claimed = true;
+      renderQuests();
+    }
+
+    spawnParticles();
+    tg?.HapticFeedback?.notificationOccurred?.('success');
+  } catch (e) {
+    console.error('claim all bonus error:', e);
+  }
+});
+
+// Tap tracking for quest
+const origBearTap = document.getElementById('bearArea');
+origBearTap.addEventListener('click', () => {
+  tapCount++;
+  // Update tap quest locally
+  if (questsData) {
+    const tapQuest = questsData.quests.find(q => q.type === 'tap_bear' && !q.done);
+    if (tapQuest) {
+      tapQuest.progress = Math.min(tapQuest.progress + 1, tapQuest.target);
+      if (tapQuest.progress >= tapQuest.target) tapQuest.done = true;
+      renderQuests();
+    }
+  }
+  // Send to server every 5 taps
+  if (tapCount % 5 === 0) {
+    fetch(`${BASE_URL}/track-tap`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${initData}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ taps: 5 }),
+    }).catch(() => {});
+  }
+});
 
 /* ==============================================================
    BOOT

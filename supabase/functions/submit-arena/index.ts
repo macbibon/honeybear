@@ -50,6 +50,36 @@ function seededRandom(seed: string, index: number): number {
   return Math.abs(hash % 1000) / 1000;
 }
 
+async function updateQuestProgress(userId: string, questType: string, increment: number) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: dq } = await supabase
+      .from("daily_quests")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("date", today)
+      .maybeSingle();
+    if (!dq) return;
+
+    for (let i = 1; i <= 3; i++) {
+      if (dq[`quest_${i}_type`] === questType && !dq[`quest_${i}_done`]) {
+        const newProg = Math.min(
+          dq[`quest_${i}_progress`] + increment,
+          dq[`quest_${i}_target`]
+        );
+        const done = newProg >= dq[`quest_${i}_target`];
+        await supabase.from("daily_quests").update({
+          [`quest_${i}_progress`]: newProg,
+          [`quest_${i}_done`]: done,
+        }).eq("id", dq.id);
+        break;
+      }
+    }
+  } catch (e) {
+    console.error("updateQuestProgress error:", e);
+  }
+}
+
 function calcDamage(pos: number, gc: number, ghw: number, yhw: number, bonus: number): { damage: number; zone: string } {
   const dist = Math.abs(pos - gc);
   let base: number;
@@ -161,12 +191,28 @@ serve(async (req: Request) => {
       rp: (user.rp || 0) + rpReward,
       arena_streak: newStreak,
     }).eq("id", user.id);
+// 1) Обновляем квесты отдельно
+await updateQuestProgress(user.id, "play_arena", 1);
 
-    await supabase.from("transactions").insert({
-      user_id: user.id, type: `arena_${result}`,
-      honey_delta: honeyReward, rp_delta: rpReward,
-      idempotency_key: `arena_result_${arenaId}`,
-    });
+if (result === "win") {
+  await updateQuestProgress(user.id, "win_arena", 1);
+  if (newStreak >= 3) {
+    await updateQuestProgress(user.id, "win_streak_3", 1);
+  }
+}
+
+// 2) Потом логируем транзакцию
+const tx = {
+  user_id: user.id,
+  type: `arena_${result}`,
+  honey_delta: honeyReward,
+  rp_delta: rpReward,
+  satiety_delta: 0,
+  idempotency_key: `arena_result_${arenaId}`, // ✅ стабильный ключ
+};
+
+const { error } = await supabase.from("transactions").insert(tx);
+if (error) throw error;
 
     return json({
       result, player_hp: pHP, opponent_hp: oHP,

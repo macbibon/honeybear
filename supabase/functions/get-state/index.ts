@@ -1,3 +1,4 @@
+// supabase/functions/get-state/index.ts
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
@@ -35,32 +36,43 @@ async function validateInitData(initData: string): Promise<TgUser> {
   return user;
 }
 
-// Upgrade multipliers
 const DEN_MULT: Record<number, number> = { 1: 1.0, 2: 1.3, 3: 1.7, 4: 2.2, 5: 3.0 };
-const BED_INTERVAL: Record<number, number> = { 1: 6, 2: 7, 3: 8 }; // minutes
-
+const BED_INTERVAL: Record<number, number> = { 1: 6, 2: 7, 3: 8 };
 const BASE_HONEY_PER_HOUR = 60;
+
+// Streak rewards: day → { honey, amber }
+const STREAK_REWARDS: Record<number, { honey: number; amber: number }> = {
+  1:  { honey: 50,   amber: 0 },
+  2:  { honey: 75,   amber: 0 },
+  3:  { honey: 100,  amber: 2 },
+  5:  { honey: 200,  amber: 5 },
+  7:  { honey: 500,  amber: 10 },
+  14: { honey: 1000, amber: 20 },
+  30: { honey: 2000, amber: 50 },
+};
+
+function getStreakReward(day: number): { honey: number; amber: number } {
+  // Find the exact milestone or give base reward
+  if (STREAK_REWARDS[day]) return STREAK_REWARDS[day];
+  // Between milestones: base 50 honey
+  return { honey: 50, amber: 0 };
+}
 
 function computeLazyUpdate(u: any) {
   const now = Date.now();
   const last = new Date(u.last_satiety_update).getTime();
   const elapsedMs = Math.max(0, now - last);
-
   const bedLevel = u.bed_level || 1;
   const tickMs = (BED_INTERVAL[bedLevel] || 6) * 60 * 1000;
-
   const ticks = Math.floor(elapsedMs / tickMs);
   const oldSat = u.satiety;
   const lost = Math.min(ticks, oldSat);
   const newSat = Math.max(0, oldSat - lost);
   const avgSat = (oldSat + newSat) / 2;
-
   const denLevel = u.den_level || 1;
   const denMult = DEN_MULT[denLevel] || 1.0;
-
   const hours = elapsedMs / 3_600_000;
   const honeyEarned = BASE_HONEY_PER_HOUR * denMult * (avgSat / 100) * hours;
-
   return { newSatiety: newSat, honeyEarned, elapsedMs };
 }
 
@@ -80,6 +92,8 @@ function toState(u: any) {
     feeder_level: u.feeder_level || 1,
     training_level: u.training_level || 1,
     bed_level: u.bed_level || 1,
+    login_streak: u.login_streak || 0,
+    last_login_date: u.last_login_date,
     created_at: u.created_at,
   };
 }
@@ -89,6 +103,16 @@ function jsonResp(body: unknown, status = 200) {
     status,
     headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
   });
+}
+
+function dateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function yesterday(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return dateStr(d);
 }
 
 serve(async (req: Request) => {
@@ -115,14 +139,17 @@ serve(async (req: Request) => {
       .from("users").select("*").eq("tg_id", tgId).maybeSingle();
     if (error) throw error;
 
+    // ── New user registration ──
     if (!user) {
       const bearName = tgUser.first_name ? `${tgUser.first_name}'s Bear` : "Bear";
+      const today = dateStr(new Date());
       const { data: newUser, error: insErr } = await supabase
         .from("users")
         .insert({
           tg_id: tgId, bear_name: bearName,
-          honey: 200, amber: 0, rp: 0, satiety: 100,
+          honey: 250, amber: 0, rp: 0, satiety: 100,
           last_satiety_update: new Date().toISOString(),
+          login_streak: 1, last_login_date: today,
         })
         .select("*").single();
       if (insErr) throw insErr;
@@ -130,39 +157,107 @@ serve(async (req: Request) => {
 
       await supabase.from("transactions").insert({
         user_id: user.id, type: "registration",
-        honey_delta: 200, satiety_delta: 100,
+        honey_delta: 250, satiety_delta: 100,
         idempotency_key: `reg_${tgId}`,
       });
 
-      return jsonResp(toState(user));
+      return jsonResp({
+        ...toState(user),
+        login_reward: { honey: 50, amber: 0, streak: 1, is_new: true },
+      });
     }
 
+    // ── Lazy tick ──
     const { newSatiety, honeyEarned, elapsedMs } = computeLazyUpdate(user);
 
     if (elapsedMs > 1000) {
-      const newHoney = user.honey + honeyEarned;
-      const now = new Date().toISOString();
-
-      await supabase.from("users").update({
-        honey: newHoney, satiety: newSatiety,
-        last_satiety_update: now,
-      }).eq("id", user.id);
-
-      if (honeyEarned > 0.01 || newSatiety !== user.satiety) {
-        await supabase.from("transactions").insert({
-          user_id: user.id, type: "lazy_tick",
-          honey_delta: honeyEarned, satiety_delta: newSatiety - user.satiety,
-        });
-      }
-
-      user.honey = newHoney;
+      user.honey += honeyEarned;
       user.satiety = newSatiety;
-      user.last_satiety_update = now;
+      user.last_satiety_update = new Date().toISOString();
     }
 
-    return jsonResp(toState(user));
+    // ── Login streak ──
+    const today = dateStr(new Date());
+    const lastLogin = user.last_login_date;
+    let loginReward = null;
+
+    if (lastLogin !== today) {
+      // Calculate new streak
+      let newStreak: number;
+      if (lastLogin === yesterday()) {
+        newStreak = (user.login_streak || 0) + 1;
+      } else {
+        newStreak = 1;
+      }
+
+      const reward = getStreakReward(newStreak);
+      user.honey += reward.honey;
+      user.amber = (user.amber || 0) + reward.amber;
+      user.login_streak = newStreak;
+      user.last_login_date = today;
+
+      loginReward = {
+        honey: reward.honey,
+        amber: reward.amber,
+        streak: newStreak,
+        is_new: false,
+      };
+
+      // Log streak reward
+      await supabase.from("transactions").insert({
+        user_id: user.id,
+        type: `login_streak_day_${newStreak}`,
+        honey_delta: reward.honey,
+        idempotency_key: `login_${user.id}_${today}`,
+      });
+
+      // Also track login quest progress
+      await updateQuestProgress(user.id, today, "login", 1);
+    }
+
+    // ── Save user ──
+    await supabase.from("users").update({
+      honey: user.honey,
+      amber: user.amber,
+      satiety: user.satiety,
+      last_satiety_update: user.last_satiety_update,
+      login_streak: user.login_streak,
+      last_login_date: user.last_login_date,
+    }).eq("id", user.id);
+
+    const resp: any = toState(user);
+    if (loginReward) resp.login_reward = loginReward;
+
+    return jsonResp(resp);
   } catch (err: any) {
     console.error("get-state error:", err);
     return jsonResp({ error: err.message }, 500);
   }
 });
+
+// Helper: update quest progress (best-effort, no throw)
+async function updateQuestProgress(userId: string, date: string, questType: string, increment: number) {
+  try {
+    const { data: dq } = await supabase
+      .from("daily_quests")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("date", date)
+      .maybeSingle();
+    if (!dq) return;
+
+    for (let i = 1; i <= 3; i++) {
+      if (dq[`quest_${i}_type`] === questType && !dq[`quest_${i}_done`]) {
+        const newProg = Math.min(dq[`quest_${i}_progress`] + increment, dq[`quest_${i}_target`]);
+        const done = newProg >= dq[`quest_${i}_target`];
+        await supabase.from("daily_quests").update({
+          [`quest_${i}_progress`]: newProg,
+          [`quest_${i}_done`]: done,
+        }).eq("id", dq.id);
+        break;
+      }
+    }
+  } catch (e) {
+    console.error("updateQuestProgress error:", e);
+  }
+}

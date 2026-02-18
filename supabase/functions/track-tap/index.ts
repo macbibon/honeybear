@@ -1,10 +1,10 @@
+// supabase/functions/track-tap/index.ts
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BOT_TOKEN = Deno.env.get("BOT_TOKEN")!;
-
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function hmacSHA256(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
@@ -32,32 +32,11 @@ async function validateInitData(initData: string): Promise<number> {
   if (!user.id) throw new Error("missing user.id");
   return user.id;
 }
-
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
   });
-}
-
-function toState(u: any) {
-  return {
-    bear_name: u.bear_name,
-    honey: Math.floor(u.honey * 100) / 100,
-    amber: u.amber,
-    rp: u.rp,
-    satiety: Math.floor(u.satiety * 100) / 100,
-    last_satiety_update: u.last_satiety_update,
-    free_food_at: u.free_food_at || "1970-01-01T00:00:00Z",
-    ads_today: u.ads_today || 0,
-    ads_today_date: u.ads_today_date || new Date().toISOString().slice(0, 10),
-    arena_streak: u.arena_streak || 0,
-    den_level: u.den_level || 1,
-    feeder_level: u.feeder_level || 1,
-    training_level: u.training_level || 1,
-    bed_level: u.bed_level || 1,
-    created_at: u.created_at,
-  };
 }
 
 serve(async (req: Request) => {
@@ -76,25 +55,36 @@ serve(async (req: Request) => {
     const auth = req.headers.get("Authorization") || "";
     const initData = auth.replace(/^Bearer\s+/i, "").trim();
     if (!initData) return json({ error: "missing initData" }, 401);
-
     const tgId = await validateInitData(initData);
+
     const body = await req.json().catch(() => ({}));
-    const name = (body.bear_name || "").trim().slice(0, 20);
+    const taps = Math.min(50, Math.max(1, body.taps || 1));
 
-    if (!name) return json({ error: "empty name" }, 400);
+    const { data: user } = await supabase
+      .from("users").select("id").eq("tg_id", tgId).maybeSingle();
+    if (!user) return json({ ok: true });
 
-    const { data, error } = await supabase
-      .from("users")
-      .update({ bear_name: name })
-      .eq("tg_id", tgId)
-      .select("*")
-      .single();
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: dq } = await supabase
+      .from("daily_quests").select("*")
+      .eq("user_id", user.id).eq("date", today).maybeSingle();
+    if (!dq) return json({ ok: true });
 
-    if (error) throw error;
+    for (let i = 1; i <= 3; i++) {
+      if (dq[`quest_${i}_type`] === "tap_bear" && !dq[`quest_${i}_done`]) {
+        const newProg = Math.min(dq[`quest_${i}_progress`] + taps, dq[`quest_${i}_target`]);
+        const done = newProg >= dq[`quest_${i}_target`];
+        await supabase.from("daily_quests").update({
+          [`quest_${i}_progress`]: newProg,
+          [`quest_${i}_done`]: done,
+        }).eq("id", dq.id);
+        break;
+      }
+    }
 
-    return json({ success: true, state: toState(data) });
+    return json({ ok: true });
   } catch (err: any) {
-    console.error("set-name error:", err);
-    return json({ error: err.message }, 500);
+    console.error("track-tap error:", err);
+    return json({ ok: true });
   }
 });

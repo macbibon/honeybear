@@ -38,6 +38,36 @@ function json(body: unknown, status = 200) {
   });
 }
 
+async function updateQuestProgress(userId: string, questType: string, increment: number) {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: dq } = await supabase
+      .from("daily_quests")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("date", today)
+      .maybeSingle();
+    if (!dq) return;
+
+    for (let i = 1; i <= 3; i++) {
+      if (dq[`quest_${i}_type`] === questType && !dq[`quest_${i}_done`]) {
+        const newProg = Math.min(
+          dq[`quest_${i}_progress`] + increment,
+          dq[`quest_${i}_target`]
+        );
+        const done = newProg >= dq[`quest_${i}_target`];
+        await supabase.from("daily_quests").update({
+          [`quest_${i}_progress`]: newProg,
+          [`quest_${i}_done`]: done,
+        }).eq("id", dq.id);
+        break;
+      }
+    }
+  } catch (e) {
+    console.error("updateQuestProgress error:", e);
+  }
+}
+
 const UPGRADES: Record<string, { maxLevel: number; costs: Record<number, number>; column: string }> = {
   den: {
     maxLevel: 5,
@@ -140,12 +170,19 @@ serve(async (req: Request) => {
       .from("users").update(update).eq("id", user.id);
     if (updErr) throw updErr;
 
-    await supabase.from("transactions").insert({
-      user_id: user.id,
-      type: `upgrade_${upgradeType}_${targetLevel}`,
-      honey_delta: -cost,
-      idempotency_key: `upgrade_${user.id}_${upgradeType}_${targetLevel}`,
-    });
+    await updateQuestProgress(user.id, "upgrade", 1);
+
+const tx = {
+  user_id: user.id,
+  type: `upgrade_${upgradeType}_${targetLevel}`,
+  honey_delta: -cost,
+  rp_delta: 0,
+  satiety_delta: 0,
+  idempotency_key: `upgrade_${user.id}_${upgradeType}_${targetLevel}`, // ✅ стабильный
+};
+
+const { error } = await supabase.from("transactions").insert(tx);
+if (error) throw error;
 
     const merged = { ...user, ...update };
     return json({ success: true, state: toState(merged) });
