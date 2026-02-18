@@ -533,6 +533,101 @@ html, body {
 .food-cost.free { color: var(--satiety-full); }
 .food-cooldown { font-size: 10px; color: var(--satiety-low); }
 
+.upgrades-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 16px 0 12px;
+  color: var(--accent);
+}
+
+.upgrade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.upgrade-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid #ffffff08;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upgrade-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.upgrade-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.upgrade-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.upgrade-effect {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.upgrade-level {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.upgrade-btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, #f5a623, #ff8c00);
+  color: #1a1a2e;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.upgrade-btn:active {
+  transform: scale(0.95);
+}
+
+.upgrade-btn:disabled {
+  background: #333;
+  color: #666;
+  cursor: default;
+}
+
+.upgrade-btn.maxed {
+  background: #2e7d32;
+  color: #fff;
+  cursor: default;
+}
+
+.upgrade-sparkle {
+  animation: sparkle 0.6s ease-out;
+}
+
+@keyframes sparkle {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.production-detail {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
 /* ================================================================
    NAME MODAL
    ================================================================ */
@@ -1136,6 +1231,9 @@ html, body {
     <div class="modal-handle"></div>
     <div class="modal-title">🍽️ Покормить медведя</div>
     <div class="food-list" id="foodList"></div>
+          <!-- Upgrades -->
+      <div class="upgrades-title">🏗️ Улучшения берлоги</div>
+      <div class="upgrade-list" id="upgradeList"></div>
   </div>
 </div>
 
@@ -1236,20 +1334,24 @@ html, body {
         <div class="satiety-bar-bg">
           <div class="satiety-bar-fill" id="satietyBar" style="width:0%"></div>
         </div>
-        <div class="satiety-hint">−1 каждые 6 мин · влияет на добычу мёда</div>
+                <div class="satiety-hint" id="satietyHint">−1 каждые 6 мин · влияет на добычу мёда</div>
       </div>
 
       <div class="production-info">
         <div class="production-icon">⛏️</div>
-        <div class="production-text">
+                <div class="production-text">
           <span class="production-title">Добыча мёда</span>
           <span class="production-rate" id="productionRate">— / час</span>
+          <span class="production-detail" id="productionDetail"></span>
         </div>
       </div>
 
       <button class="feed-btn" id="feedBtn" style="margin-top:12px">
         🍽️ Покормить
       </button>
+            <!-- Upgrades -->
+      <div class="upgrades-title">🏗️ Улучшения берлоги</div>
+      <div class="upgrade-list" id="upgradeList"></div>
     </div>
 
     <!-- ======== TAB: Arena ======== -->
@@ -1328,11 +1430,124 @@ let gameState = null;
 let tickerInterval = null;
 
 /* ==============================================================
+   UPGRADE CONSTANTS
+   ============================================================== */
+const DEN_MULT = { 1: 1.0, 2: 1.3, 3: 1.7, 4: 2.2, 5: 3.0 };
+const BED_INTERVAL = { 1: 6, 2: 7, 3: 8 };
+const FEEDER_MULT = { 1: 1.0, 2: 1.3, 3: 1.6 };
+const TRAINING_BONUS = { 1: 0, 2: 3, 3: 6 };
+
+const UPGRADES_DEF = [
+  {
+    key: 'den', icon: '🏠', name: 'Берлога',
+    column: 'den_level', maxLevel: 5,
+    costs: { 2: 500, 3: 1500, 4: 4000, 5: 10000 },
+    effectFn: l => `Доход ×${DEN_MULT[l]}`,
+  },
+  {
+    key: 'feeder', icon: '🍽️', name: 'Кормушка',
+    column: 'feeder_level', maxLevel: 3,
+    costs: { 2: 300, 3: 1000 },
+    effectFn: l => `Еда ×${FEEDER_MULT[l]}`,
+  },
+  {
+    key: 'training', icon: '🥊', name: 'Тренировка',
+    column: 'training_level', maxLevel: 3,
+    costs: { 2: 400, 3: 1200 },
+    effectFn: l => `Урон +${TRAINING_BONUS[l]}`,
+  },
+  {
+    key: 'bed', icon: '🛏️', name: 'Кровать',
+    column: 'bed_level', maxLevel: 3,
+    costs: { 2: 600, 3: 2000 },
+    effectFn: l => `Голод: 1/${BED_INTERVAL[l]} мин`,
+  },
+];
+
+/* ==============================================================
+   RENDER UPGRADES
+   ============================================================== */
+function renderUpgrades(s) {
+  const list = document.getElementById('upgradeList');
+  list.innerHTML = '';
+
+  UPGRADES_DEF.forEach(u => {
+    const curLevel = s[u.column] || 1;
+    const isMax = curLevel >= u.maxLevel;
+    const nextLevel = curLevel + 1;
+    const cost = u.costs[nextLevel] || 0;
+    const canAfford = s.honey >= cost;
+
+    const card = document.createElement('div');
+    card.className = 'upgrade-card';
+    card.innerHTML = `
+      <div class="upgrade-icon">${u.icon}</div>
+      <div class="upgrade-info">
+        <div class="upgrade-name">${u.name}</div>
+        <div class="upgrade-effect">${u.effectFn(curLevel)}</div>
+        <div class="upgrade-level">Ур. ${curLevel}/${u.maxLevel}</div>
+      </div>
+      ${isMax
+        ? '<button class="upgrade-btn maxed" disabled>MAX</button>'
+        : `<button class="upgrade-btn" ${canAfford ? '' : 'disabled'}>${cost} 🍯</button>`
+      }
+    `;
+
+    if (!isMax && canAfford) {
+      card.querySelector('.upgrade-btn').addEventListener('click', () => {
+        doUpgrade(u.key, nextLevel, card);
+      });
+    }
+
+    list.appendChild(card);
+  });
+}
+
+async function doUpgrade(type, targetLevel, card) {
+  const btn = card.querySelector('.upgrade-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  try {
+    const res = await fetch(`${BASE_URL}/upgrade`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${initData}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        upgrade_type: type,
+        target_level: targetLevel,
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      tg?.showAlert?.(data.error || 'Ошибка');
+      btn.disabled = false;
+      btn.textContent = 'Retry';
+      return;
+    }
+
+    gameState = data.state;
+    renderState(gameState);
+
+    card.classList.add('upgrade-sparkle');
+    setTimeout(() => card.classList.remove('upgrade-sparkle'), 600);
+    spawnParticles();
+    tg?.HapticFeedback?.impactOccurred?.('heavy');
+  } catch (e) {
+    console.error('upgrade error:', e);
+    tg?.showAlert?.('Ошибка сети');
+    btn.disabled = false;
+  }
+}
+/* ==============================================================
    BEAR PHRASES
    ============================================================== */
 const PHRASES = {
-  happy: ['Мне отлично! 🍯', 'Обожаю мёд!', 'Ррр! 💪', 'Я сильный!', 'Дай обнимашку! 🤗'],
-  normal: ['Привет! 👋', 'Не плохо...', 'Хочу мёда 🍯', 'Поиграем?'],
+  happy: ['Мне отлично! 🍯', 'Обожаю мёд!', 'Мёд круто! 💪', 'Посмотри на меня - я же силач!', 'Ты такой клёвый! 🤗'],
+  normal: ['Привет го кушац! 👋', 'Ты хороший такой', 'Хочу мёда 🍯', 'Поиграем?'],
   sad: ['Я голодный...', 'Покорми меня 😢', 'Мне грустно...', 'Хочу кушать...'],
   very_sad: ['Помоги...', 'Я засыпаю... 😴', 'Совсем нет сил...'],
   sleeping: ['Zzz...', '💤', '...'],
@@ -1353,9 +1568,10 @@ function getRandomPhrase(mood) {
 
 function getCurrentSatiety() {
   if (!gameState) return 100;
+  const bed = gameState.bed_level || 1;
+  const tickMs = (BED_INTERVAL[bed] || 6) * 60 * 1000;
   const elapsed = Date.now() - new Date(gameState.last_satiety_update).getTime();
-  const ticks = Math.floor(elapsed / (6 * 60 * 1000));
-  return Math.max(0, gameState.satiety - ticks);
+  return Math.max(0, gameState.satiety - Math.floor(elapsed / tickMs));
 }
 
 /* ==============================================================
@@ -1399,21 +1615,28 @@ async function loadState() {
    RENDER
    ============================================================== */
 function renderState(s) {
-  // Bear tab
   document.getElementById('bearName').textContent = s.bear_name;
   document.getElementById('honeyValue').textContent = formatNum(s.honey);
   document.getElementById('amberValue').textContent = formatNum(s.amber);
   updateSatietyUI(s.satiety);
   updateBearVisual(s.satiety);
-  const rate = 60 * (s.satiety / 100);
+
+  const den = DEN_MULT[s.den_level || 1] || 1;
+  const bed = BED_INTERVAL[s.bed_level || 1] || 6;
+  const rate = 60 * den * (s.satiety / 100);
   document.getElementById('productionRate').textContent = `${rate.toFixed(1)} 🍯/час`;
+  document.getElementById('productionDetail').textContent =
+    `base 60 × берлога ×${den} × сытость ${Math.floor(s.satiety)}%`;
+  document.getElementById('satietyHint').textContent =
+    `−1 каждые ${bed} мин · влияет на добычу мёда`;
   document.getElementById('feedBtn').disabled = false;
 
-  // Arena tab
   document.getElementById('arenaStreak').textContent = s.arena_streak || 0;
   document.getElementById('streakFire').textContent = (s.arena_streak || 0) >= 3 ? '🔥' : '';
   document.getElementById('arenaRp').textContent = s.rp || 0;
   document.getElementById('arenaEnterBtn').disabled = s.honey < 20;
+
+  renderUpgrades(s);
 }
 
 function updateBearVisual(satiety) {
@@ -1450,21 +1673,18 @@ function startTicker() {
   if (tickerInterval) clearInterval(tickerInterval);
   tickerInterval = setInterval(() => {
     if (!gameState) return;
-    const now = Date.now();
-    const last = new Date(gameState.last_satiety_update).getTime();
-    const elapsed = now - last;
-    const ticks = Math.floor(elapsed / (6 * 60 * 1000));
-    const curSat = Math.max(0, gameState.satiety - ticks);
-
+    const curSat = getCurrentSatiety();
     updateSatietyUI(curSat);
     updateBearVisual(curSat);
 
-    const rate = 60 * (curSat / 100);
+    const den = DEN_MULT[gameState.den_level || 1] || 1;
+    const rate = 60 * den * (curSat / 100);
     document.getElementById('productionRate').textContent = `${rate.toFixed(1)} 🍯/час`;
 
+    const elapsed = Date.now() - new Date(gameState.last_satiety_update).getTime();
     const avg = (gameState.satiety + curSat) / 2;
     const hrs = elapsed / 3600000;
-    const earned = 60 * (avg / 100) * hrs;
+    const earned = 60 * den * (avg / 100) * hrs;
     document.getElementById('honeyValue').textContent = formatNum(gameState.honey + earned);
   }, 3000);
 }
@@ -1527,26 +1747,27 @@ async function feedBear(foodType) {
 function openFeedModal() {
   const list = document.getElementById('foodList');
   list.innerHTML = '';
+  const fm = FEEDER_MULT[gameState.feeder_level || 1] || 1;
   const foods = [
     {
       type: 'berries', emoji: '🫐', name: 'Ягоды',
-      desc: '+15 сытости', cost: 'Бесплатно',
+      desc: `+${Math.round(15 * fm)} сытости`, cost: 'Бесплатно',
       free: true, cooldown: getCooldownText(),
       disabled: !canUseBerries(),
     },
     {
       type: 'honey_food', emoji: '🍯', name: 'Медовые соты',
-      desc: '+25 сытости', cost: '30 🍯',
+      desc: `+${Math.round(25 * fm)} сытости`, cost: '30 🍯',
       free: false, disabled: gameState.honey < 30,
     },
     {
       type: 'fish', emoji: '🐟', name: 'Рыба',
-      desc: '+50 сытости', cost: '80 🍯',
+      desc: `+${Math.round(50 * fm)} сытости`, cost: '80 🍯',
       free: false, disabled: gameState.honey < 80,
     },
     {
       type: 'ad', emoji: '📺', name: 'Реклама',
-      desc: '+30 сытости', cost: `Бесплатно (${getAdsLeft()}/2)`,
+      desc: `+${Math.round(30 * fm)} сытости`, cost: `Бесплатно (${getAdsLeft()}/2)`,
       free: true, disabled: getAdsLeft() <= 0,
     },
   ];
@@ -1772,9 +1993,10 @@ function playerHit() {
   // Determine zone & damage
   const dist = Math.abs(cursorPos - round.green_center);
   let zone, damage;
-  if (dist <= round.green_half_width) { zone = 'green'; damage = 30; }
-  else if (dist <= round.yellow_half_width) { zone = 'yellow'; damage = 15; }
-  else { zone = 'red'; damage = 5; }
+  const tb = TRAINING_BONUS[gameState.training_level || 1] || 0;
+  if (dist <= round.green_half_width) { zone = 'green'; damage = 30 + tb; }
+  else if (dist <= round.yellow_half_width) { zone = 'yellow'; damage = 15 + tb; }
+  else { zone = 'red'; damage = 5 + tb; }
 
   // Apply player damage to opponent
   opponentHP = Math.max(0, opponentHP - damage);

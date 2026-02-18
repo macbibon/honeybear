@@ -38,24 +38,26 @@ function json(body: unknown, status = 200) {
   });
 }
 
-// ── Deterministic bot scoring ──────────────────────────────
+const TRAINING_BONUS: Record<number, number> = { 1: 0, 2: 3, 3: 6 };
+
 function seededRandom(seed: string, index: number): number {
-  // Simple hash-based PRNG
   let hash = 0;
-  const str = seed + '_' + index;
+  const str = seed + "_" + index;
   for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash = hash & hash;
   }
   return Math.abs(hash % 1000) / 1000;
 }
 
-function calculateDamage(cursorPos: number, greenCenter: number, greenHalf: number, yellowHalf: number): { damage: number; zone: string } {
-  const dist = Math.abs(cursorPos - greenCenter);
-  if (dist <= greenHalf) return { damage: 30, zone: 'green' };
-  if (dist <= yellowHalf) return { damage: 15, zone: 'yellow' };
-  return { damage: 5, zone: 'red' };
+function calcDamage(pos: number, gc: number, ghw: number, yhw: number, bonus: number): { damage: number; zone: string } {
+  const dist = Math.abs(pos - gc);
+  let base: number;
+  let zone: string;
+  if (dist <= ghw) { base = 30; zone = "green"; }
+  else if (dist <= yhw) { base = 15; zone = "yellow"; }
+  else { base = 5; zone = "red"; }
+  return { damage: base + bonus, zone };
 }
 
 serve(async (req: Request) => {
@@ -79,192 +81,100 @@ serve(async (req: Request) => {
     const body = await req.json().catch(() => ({}));
     const arenaId = body.arena_id;
     const hits = body.hits as Array<{ round: number; cursor_pos: number }>;
+    if (!arenaId || !hits || !Array.isArray(hits)) return json({ error: "invalid body" }, 400);
 
-    if (!arenaId || !hits || !Array.isArray(hits)) {
-      return json({ error: "invalid request body" }, 400);
-    }
-
-    // Get user
-    const { data: user, error: userErr } = await supabase
+    const { data: user, error: ue } = await supabase
       .from("users").select("*").eq("tg_id", tgId).maybeSingle();
-    if (userErr) throw userErr;
+    if (ue) throw ue;
     if (!user) return json({ error: "user not found" }, 404);
 
-    // Get arena
-    const { data: arena, error: arenaErr } = await supabase
+    const { data: arena, error: ae } = await supabase
       .from("arenas").select("*").eq("id", arenaId).maybeSingle();
-    if (arenaErr) throw arenaErr;
+    if (ae) throw ae;
     if (!arena) return json({ error: "arena not found" }, 404);
+    if (arena.user_id !== user.id) return json({ error: "not your arena" }, 403);
+    if (arena.result !== null) return json({ error: "already completed" }, 400);
 
-    // Validate ownership
-    if (arena.user_id !== user.id) {
-      return json({ error: "not your arena" }, 403);
-    }
+    const rounds = arena.rounds_data as any[];
+    const trainingBonus = TRAINING_BONUS[user.training_level || 1] || 0;
 
-    // Validate not completed
-    if (arena.result !== null) {
-      return json({ error: "arena already completed" }, 400);
-    }
+    let pHP = 100, oHP = 100;
+    const pScores: any[] = [], oScores: any[] = [];
 
-    const rounds = arena.rounds_data as Array<{
-      round: number;
-      green_center: number;
-      green_half_width: number;
-      yellow_half_width: number;
-    }>;
-
-    // ── Calculate player damage ────────────────────────────
-    let playerHP = 100;
-    let opponentHP = 100;
-    const playerScores: any[] = [];
-    const opponentScores: any[] = [];
-
-    // Bot accuracy: based on opponent RP (40-70% chance of hitting green)
     const oppRp = arena.opponent_rp;
-    // Accuracy scales: rp 10 → 40%, rp 100 → 55%, rp 500 → 65%, rp 1000 → 70%
-    const botAccuracy = Math.min(0.70, 0.40 + (oppRp / 2000) * 0.30);
+    const botAcc = Math.min(0.70, 0.40 + (oppRp / 2000) * 0.30);
 
     for (let i = 0; i < rounds.length; i++) {
-      const round = rounds[i];
-      const hit = hits.find(h => h.round === round.round);
+      const r = rounds[i];
+      const hit = hits.find((h: any) => h.round === r.round);
 
-      // Player hit
-      if (hit && opponentHP > 0 && playerHP > 0) {
-        const cursorPos = Math.max(0, Math.min(1, hit.cursor_pos));
-        const pResult = calculateDamage(
-          cursorPos, round.green_center,
-          round.green_half_width, round.yellow_half_width
-        );
-        opponentHP = Math.max(0, opponentHP - pResult.damage);
-        playerScores.push({
-          round: round.round,
-          cursor_pos: cursorPos,
-          damage: pResult.damage,
-          zone: pResult.zone,
-        });
+      if (hit && oHP > 0 && pHP > 0) {
+        const pos = Math.max(0, Math.min(1, hit.cursor_pos));
+        const res = calcDamage(pos, r.green_center, r.green_half_width, r.yellow_half_width, trainingBonus);
+        oHP = Math.max(0, oHP - res.damage);
+        pScores.push({ round: r.round, cursor_pos: pos, damage: res.damage, zone: res.zone });
       }
 
-      // Bot hit (deterministic from arena ID)
-      if (playerHP > 0 && opponentHP > 0) {
+      if (pHP > 0 && oHP > 0) {
         const rng = seededRandom(arenaId, i);
-        let botDamage: number;
-        let botZone: string;
-
-        if (rng < botAccuracy * 0.6) {
-          // Hit green
-          botDamage = 30;
-          botZone = 'green';
-        } else if (rng < botAccuracy) {
-          // Hit yellow
-          botDamage = 15;
-          botZone = 'yellow';
-        } else {
-          // Miss (red)
-          botDamage = 5;
-          botZone = 'red';
-        }
-
-        playerHP = Math.max(0, playerHP - botDamage);
-        opponentScores.push({
-          round: round.round,
-          damage: botDamage,
-          zone: botZone,
-        });
+        let bd: number, bz: string;
+        if (rng < botAcc * 0.6) { bd = 30; bz = "green"; }
+        else if (rng < botAcc) { bd = 15; bz = "yellow"; }
+        else { bd = 5; bz = "red"; }
+        pHP = Math.max(0, pHP - bd);
+        oScores.push({ round: r.round, damage: bd, zone: bz });
       }
 
-      // Check if fight is over
-      if (playerHP <= 0 || opponentHP <= 0) break;
+      if (pHP <= 0 || oHP <= 0) break;
     }
 
-    // ── Determine result ───────────────────────────────────
     let result: string;
-    if (opponentHP <= 0 && playerHP > 0) {
-      result = 'win';
-    } else if (playerHP <= 0 && opponentHP > 0) {
-      result = 'loss';
-    } else if (playerHP <= 0 && opponentHP <= 0) {
-      // Both down — whoever did more total damage wins
-      const pTotal = playerScores.reduce((s: number, x: any) => s + x.damage, 0);
-      const oTotal = opponentScores.reduce((s: number, x: any) => s + x.damage, 0);
-      result = pTotal >= oTotal ? 'win' : 'loss';
+    if (oHP <= 0 && pHP > 0) result = "win";
+    else if (pHP <= 0 && oHP > 0) result = "loss";
+    else if (pHP <= 0 && oHP <= 0) {
+      const pt = pScores.reduce((s: number, x: any) => s + x.damage, 0);
+      const ot = oScores.reduce((s: number, x: any) => s + x.damage, 0);
+      result = pt >= ot ? "win" : "loss";
     } else {
-      // All rounds done, compare HP
-      result = opponentHP <= playerHP ? 'win' : 'loss';
+      result = oHP <= pHP ? "win" : "loss";
     }
 
-    // ── Rewards ────────────────────────────────────────────
-    let honeyReward: number;
-    let rpReward: number;
-    let newStreak: number;
-    let streakBonus = 0;
+    let honeyReward: number, rpReward: number, newStreak: number, streakBonus = 0;
+    const curStreak = user.arena_streak || 0;
 
-    const currentStreak = user.arena_streak || 0;
-
-    if (result === 'win') {
-      honeyReward = 50;
-      rpReward = 15;
-      newStreak = currentStreak + 1;
-
-      // Streak bonus: every 3 wins → +20% honey
-      const streakMultiplier = Math.floor(newStreak / 3);
-      if (streakMultiplier > 0) {
-        streakBonus = honeyReward * 0.20 * streakMultiplier;
-        honeyReward += streakBonus;
-      }
+    if (result === "win") {
+      honeyReward = 50; rpReward = 15; newStreak = curStreak + 1;
+      const mult = Math.floor(newStreak / 3);
+      if (mult > 0) { streakBonus = honeyReward * 0.20 * mult; honeyReward += streakBonus; }
     } else {
-      honeyReward = 5;
-      rpReward = 2;
-      newStreak = 0;
+      honeyReward = 5; rpReward = 2; newStreak = 0;
     }
 
-    // ── Update arena ───────────────────────────────────────
-    const { error: arenaUpdErr } = await supabase
-      .from("arenas")
-      .update({
-        player_scores: playerScores,
-        opponent_scores: opponentScores,
-        player_hp: playerHP,
-        opponent_hp: opponentHP,
-        result,
-        honey_delta: honeyReward,
-        rp_delta: rpReward,
-        streak_bonus: streakBonus,
-      })
-      .eq("id", arenaId);
-    if (arenaUpdErr) throw arenaUpdErr;
+    await supabase.from("arenas").update({
+      player_scores: pScores, opponent_scores: oScores,
+      player_hp: pHP, opponent_hp: oHP, result,
+      honey_delta: honeyReward, rp_delta: rpReward, streak_bonus: streakBonus,
+    }).eq("id", arenaId);
 
-    // ── Update user ────────────────────────────────────────
-    const { error: userUpdErr } = await supabase
-      .from("users")
-      .update({
-        honey: user.honey + honeyReward,
-        rp: (user.rp || 0) + rpReward,
-        arena_streak: newStreak,
-      })
-      .eq("id", user.id);
-    if (userUpdErr) throw userUpdErr;
+    await supabase.from("users").update({
+      honey: user.honey + honeyReward,
+      rp: (user.rp || 0) + rpReward,
+      arena_streak: newStreak,
+    }).eq("id", user.id);
 
-    // ── Log transaction ────────────────────────────────────
     await supabase.from("transactions").insert({
-      user_id: user.id,
-      type: `arena_${result}`,
-      honey_delta: honeyReward,
-      rp_delta: rpReward,
+      user_id: user.id, type: `arena_${result}`,
+      honey_delta: honeyReward, rp_delta: rpReward,
       idempotency_key: `arena_result_${arenaId}`,
     });
 
     return json({
-      result,
-      player_hp: playerHP,
-      opponent_hp: opponentHP,
-      player_scores: playerScores,
-      opponent_scores: opponentScores,
+      result, player_hp: pHP, opponent_hp: oHP,
+      player_scores: pScores, opponent_scores: oScores,
       honey_reward: Math.floor(honeyReward * 100) / 100,
-      rp_reward: rpReward,
-      streak: newStreak,
+      rp_reward: rpReward, streak: newStreak,
       streak_bonus: Math.floor(streakBonus * 100) / 100,
     });
-
   } catch (err: any) {
     console.error("submit-arena error:", err);
     return json({ error: err.message }, 500);
