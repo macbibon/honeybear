@@ -533,6 +533,9 @@ html, body {
 .food-cost.free { color: var(--satiety-full); }
 .food-cooldown { font-size: 10px; color: var(--satiety-low); }
 
+/* ================================================================
+   UPGRADES
+   ================================================================ */
 .upgrades-title {
   font-size: 18px;
   font-weight: 700;
@@ -1225,15 +1228,12 @@ html, body {
   </div>
 </div>
 
-<!-- ======================== FEED MODAL ======================== -->
+<!-- ======================== FEED MODAL (без апгрейдов!) ======================== -->
 <div class="modal-overlay" id="feedModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">🍽️ Покормить медведя</div>
     <div class="food-list" id="foodList"></div>
-          <!-- Upgrades -->
-      <div class="upgrades-title">🏗️ Улучшения берлоги</div>
-      <div class="upgrade-list" id="upgradeList"></div>
   </div>
 </div>
 
@@ -1334,12 +1334,12 @@ html, body {
         <div class="satiety-bar-bg">
           <div class="satiety-bar-fill" id="satietyBar" style="width:0%"></div>
         </div>
-                <div class="satiety-hint" id="satietyHint">−1 каждые 6 мин · влияет на добычу мёда</div>
+        <div class="satiety-hint" id="satietyHint">−1 каждые 6 мин · влияет на добычу мёда</div>
       </div>
 
       <div class="production-info">
         <div class="production-icon">⛏️</div>
-                <div class="production-text">
+        <div class="production-text">
           <span class="production-title">Добыча мёда</span>
           <span class="production-rate" id="productionRate">— / час</span>
           <span class="production-detail" id="productionDetail"></span>
@@ -1349,7 +1349,8 @@ html, body {
       <button class="feed-btn" id="feedBtn" style="margin-top:12px">
         🍽️ Покормить
       </button>
-            <!-- Upgrades -->
+
+      <!-- ======== UPGRADES (единственный экземпляр) ======== -->
       <div class="upgrades-title">🏗️ Улучшения берлоги</div>
       <div class="upgrade-list" id="upgradeList"></div>
     </div>
@@ -1432,10 +1433,10 @@ let tickerInterval = null;
 /* ==============================================================
    UPGRADE CONSTANTS
    ============================================================== */
-const DEN_MULT = { 1: 1.0, 2: 1.3, 3: 1.7, 4: 2.2, 5: 3.0 };
-const BED_INTERVAL = { 1: 6, 2: 7, 3: 8 };
-const FEEDER_MULT = { 1: 1.0, 2: 1.3, 3: 1.6 };
-const TRAINING_BONUS = { 1: 0, 2: 3, 3: 6 };
+const DEN_MULT      = { 1: 1.0, 2: 1.3, 3: 1.7, 4: 2.2, 5: 3.0 };
+const BED_INTERVAL  = { 1: 6,   2: 7,   3: 8 };
+const FEEDER_MULT   = { 1: 1.0, 2: 1.3, 3: 1.6 };
+const TRAINING_BONUS = { 1: 0,  2: 3,   3: 6 };
 
 const UPGRADES_DEF = [
   {
@@ -1542,13 +1543,14 @@ async function doUpgrade(type, targetLevel, card) {
     btn.disabled = false;
   }
 }
+
 /* ==============================================================
    BEAR PHRASES
    ============================================================== */
 const PHRASES = {
-  happy: ['Мне отлично! 🍯', 'Обожаю мёд!', 'Мёд круто! 💪', 'Посмотри на меня - я же силач!', 'Ты такой клёвый! 🤗'],
-  normal: ['Привет го кушац! 👋', 'Ты хороший такой', 'Хочу мёда 🍯', 'Поиграем?'],
-  sad: ['Я голодный...', 'Покорми меня 😢', 'Мне грустно...', 'Хочу кушать...'],
+  happy:    ['Мне отлично! 🍯', 'Обожаю мёд!', 'Мёд круто! 💪', 'Посмотри на меня - я же силач!', 'Ты такой клёвый! 🤗'],
+  normal:   ['Привет го кушац! 👋', 'Ты хороший такой', 'Хочу мёда 🍯', 'Поиграем?'],
+  sad:      ['Я голодный...', 'Покорми меня 😢', 'Мне грустно...', 'Хочу кушать...'],
   very_sad: ['Помоги...', 'Я засыпаю... 😴', 'Совсем нет сил...'],
   sleeping: ['Zzz...', '💤', '...'],
 };
@@ -1598,7 +1600,6 @@ async function loadState() {
     hideLoading();
     showApp();
 
-    // First visit check
     if (gameState.bear_name.endsWith("'s Bear") ||
         gameState.bear_name === 'Bear' ||
         gameState.bear_name === 'Медведь') {
@@ -1944,7 +1945,6 @@ function nextRound() {
   document.getElementById('battleRound').textContent =
     `Раунд ${currentRound + 1} / ${arenaData.rounds.length}`;
 
-  // Set zones
   const gc = round.green_center;
   const ghw = round.green_half_width;
   const yhw = round.yellow_half_width;
@@ -1956,7 +1956,6 @@ function nextRound() {
   yellowEl.style.left = `${(gc - yhw) * 100}%`;
   yellowEl.style.width = `${yhw * 2 * 100}%`;
 
-  // Reset cursor
   cursorPos = 0;
   cursorDir = 1;
   cursorSpeed = 0.008 + currentRound * 0.003;
@@ -1990,28 +1989,25 @@ function playerHit() {
   const round = arenaData.rounds[currentRound];
   playerHits.push({ round: round.round, cursor_pos: cursorPos });
 
-  // Determine zone & damage
   const dist = Math.abs(cursorPos - round.green_center);
   let zone, damage;
   const tb = TRAINING_BONUS[gameState.training_level || 1] || 0;
-  if (dist <= round.green_half_width) { zone = 'green'; damage = 30 + tb; }
+  if (dist <= round.green_half_width)      { zone = 'green';  damage = 30 + tb; }
   else if (dist <= round.yellow_half_width) { zone = 'yellow'; damage = 15 + tb; }
-  else { zone = 'red'; damage = 5 + tb; }
+  else                                      { zone = 'red';    damage = 5 + tb;  }
 
-  // Apply player damage to opponent
   opponentHP = Math.max(0, opponentHP - damage);
   showDamagePopup('opponentEmoji', damage, zone);
   animateEmoji('opponentEmoji', 'hit');
   animateEmoji('playerEmoji', 'attack');
 
   document.getElementById('timingLabel').textContent =
-    zone === 'green' ? `🎯 Отлично! −${damage}` :
+    zone === 'green'  ? `🎯 Отлично! −${damage}` :
     zone === 'yellow' ? `👍 Неплохо! −${damage}` :
-    `😬 Мимо... −${damage}`;
+                        `😬 Мимо... −${damage}`;
 
   tg?.HapticFeedback?.impactOccurred?.(zone === 'green' ? 'heavy' : 'light');
 
-  // Bot attacks after delay
   setTimeout(() => {
     if (opponentHP <= 0) {
       updateFighterHP();
@@ -2019,13 +2015,12 @@ function playerHit() {
       return;
     }
 
-    // Bot damage (deterministic)
     const botRng = seededRandom(arenaData.arena_id, currentRound);
     const acc = Math.min(0.70, 0.40 + (arenaData.opponent_rp / 2000) * 0.30);
     let botDmg, botZone;
-    if (botRng < acc * 0.6) { botDmg = 30; botZone = 'green'; }
-    else if (botRng < acc) { botDmg = 15; botZone = 'yellow'; }
-    else { botDmg = 5; botZone = 'red'; }
+    if (botRng < acc * 0.6)  { botDmg = 30; botZone = 'green'; }
+    else if (botRng < acc)   { botDmg = 15; botZone = 'yellow'; }
+    else                     { botDmg = 5;  botZone = 'red'; }
 
     playerHP = Math.max(0, playerHP - botDmg);
     showDamagePopup('playerEmoji', botDmg, botZone);
@@ -2103,13 +2098,11 @@ async function endBattle() {
       return;
     }
 
-    // Update local state
     gameState.honey += data.honey_reward;
     gameState.rp = (gameState.rp || 0) + data.rp_reward;
     gameState.arena_streak = data.streak;
     renderState(gameState);
 
-    // Show result
     document.getElementById('battleOverlay').classList.remove('show');
     showResult(data);
   } catch (e) {
@@ -2198,22 +2191,14 @@ function formatNum(n) {
   return Math.floor(v).toLocaleString('ru-RU');
 }
 
-function showLoading() {
-  document.getElementById('loadingScreen').classList.remove('hidden');
-}
-function hideLoading() {
-  document.getElementById('loadingScreen').classList.add('hidden');
-}
-function showApp() {
-  document.getElementById('app').classList.add('visible');
-}
+function showLoading()  { document.getElementById('loadingScreen').classList.remove('hidden'); }
+function hideLoading()  { document.getElementById('loadingScreen').classList.add('hidden'); }
+function showApp()      { document.getElementById('app').classList.add('visible'); }
 function showError(msg) {
   document.getElementById('errorMsg').textContent = msg || 'Неизвестная ошибка';
   document.getElementById('errorScreen').classList.add('visible');
 }
-function hideError() {
-  document.getElementById('errorScreen').classList.remove('visible');
-}
+function hideError()    { document.getElementById('errorScreen').classList.remove('visible'); }
 
 /* ==============================================================
    BOOT
