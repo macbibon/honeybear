@@ -2340,6 +2340,45 @@ if (tg) {
   tg.setBackgroundColor('#1a1a2e');
   initData = tg.initData || '';
 }
+// =====================
+// HARD GUARDS / DEBUG
+// =====================
+
+// 1) если скрипт упадёт где угодно — увидишь это, а не вечную загрузку
+window.addEventListener('error', (ev) => {
+  try {
+    hideLoading();
+    showError(`JS error: ${ev?.message || 'unknown'} @${ev?.filename || ''}:${ev?.lineno || ''}`);
+    tg?.showPopup?.({
+      title: 'JS ERROR',
+      message: String(ev?.message || 'unknown').slice(0, 3500),
+      buttons: [{ type: 'ok', text: 'OK' }],
+    });
+  } catch {}
+});
+
+window.addEventListener('unhandledrejection', (ev) => {
+  try {
+    hideLoading();
+    const msg = ev?.reason?.message || String(ev?.reason || 'promise rejected');
+    showError(`Promise error: ${msg}`);
+    tg?.showPopup?.({
+      title: 'PROMISE ERROR',
+      message: msg.slice(0, 3500),
+      buttons: [{ type: 'ok', text: 'OK' }],
+    });
+  } catch {}
+});
+
+// 2) если открыли НЕ в Telegram — покажем понятную ошибку
+if (!tg) {
+  hideLoading();
+  showError('Открой игру внутри Telegram (Mini App).');
+}
+if (tg && !initData) {
+  // бывает, если миниапп открыт криво/не через кнопку/не через startapp
+  console.warn('Empty initData');
+}
 
 /* ==============================================================
    STATE
@@ -2500,13 +2539,23 @@ async function loadState() {
   showLoading();
   hideError();
 
+  // ⏱ таймаут чтобы не висеть вечно
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 12000);
+
   try {
+    if (!initData) {
+      throw new Error('initData пустой. Открой Mini App через кнопку в боте / startapp ссылку.');
+    }
+
     const res = await fetch(`${BASE_URL}/get-state`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${initData}`,
         'Content-Type': 'application/json',
       },
+      body: '{}',
+      signal: controller.signal,
     });
 
     if (!res.ok) {
@@ -2518,40 +2567,43 @@ async function loadState() {
 
     renderState(gameState);
 
-    // ⚠️ защита от повторного запуска тикера (если у тебя есть tickerInterval)
-    // if (!window.__tickerStarted) { startTicker(); window.__tickerStarted = true; }
+    // если startTicker может падать — пусть падает, но лоадер мы всё равно выключим (finally)
     startTicker();
 
-    hideLoading();
     showApp();
 
-    // Show login reward if present
     if (gameState.login_reward) {
       setTimeout(() => showLoginReward(gameState.login_reward), 800);
     }
 
-    // Render streak
     renderStreak(gameState.login_streak || 0);
-
-    // Load quests
     loadQuests();
-
-    // Try apply referral from startapp (one-time)
     tryApplyReferralOnce();
 
-    // First visit check
     const name = (gameState.bear_name || "").trim();
-    if (
-      name.endsWith("'s Bear") ||
-      name === "Bear" ||
-      name === "Медведь"
-    ) {
+    if (name.endsWith("'s Bear") || name === "Bear" || name === "Медведь") {
       setTimeout(() => showNameModal(), 500);
     }
+
   } catch (err) {
     console.error('loadState error:', err);
-    hideLoading();
-    showError(err.message || "Unknown error");
+
+    // AbortError — норм при таймауте
+    const msg = (err?.name === 'AbortError')
+      ? 'get-state не отвечает (таймаут 12с). Проверь BASE_URL / деплой функций / сеть.'
+      : (err?.message || "Unknown error");
+
+    showError(msg);
+
+    tg?.showPopup?.({
+      title: 'LOAD STATE ERROR',
+      message: msg.slice(0, 3500),
+      buttons: [{ type: 'ok', text: 'OK' }],
+    });
+
+  } finally {
+    clearTimeout(t);
+    hideLoading(); // ✅ главное: лоадер выключается ВСЕГДА
   }
 }
 
