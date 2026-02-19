@@ -190,10 +190,11 @@ serve(async (req: Request) => {
 
     // Update user
     const { error: userUpdErr } = await supabase.from("users").update({
-      honey: user.honey + honeyReward,
-      rp: (user.rp || 0) + rpReward,
-      arena_streak: newStreak,
-    }).eq("id", user.id);
+  honey: user.honey + honeyReward,
+  rp: (user.rp || 0) + rpReward,
+  season_rp: (user.season_rp || 0) + rpReward,
+  arena_streak: newStreak,
+}).eq("id", user.id);
     if (userUpdErr) throw userUpdErr;
 
     // Log transaction

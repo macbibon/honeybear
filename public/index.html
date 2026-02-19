@@ -1455,6 +1455,241 @@ html, body {
   color: var(--text-muted);
   font-size: 13px;
 }
+
+
+/* ================================================================
+   LEAGUE & LEADERBOARD
+   ================================================================ */
+.league-section {
+  padding: 8px 0;
+}
+
+.season-header-card {
+  background: linear-gradient(135deg, #1f2b47, #2a1a3e);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px solid #ffffff10;
+  text-align: center;
+}
+
+.season-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.season-timer {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.player-league-card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  border: 1px solid #ffffff08;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.league-badge {
+  font-size: 42px;
+  flex-shrink: 0;
+}
+
+.league-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.league-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.league-name.gold { color: #ffd700; }
+.league-name.silver { color: #c0c0c0; }
+.league-name.bronze { color: #cd7f32; }
+
+.league-rp {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.league-rank {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.league-progress-section {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin-bottom: 14px;
+  border: 1px solid #ffffff08;
+}
+
+.league-progress-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.league-progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #0d1117;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.league-progress-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.8s ease;
+}
+
+.league-progress-fill.to-silver {
+  background: linear-gradient(90deg, #cd7f32, #c0c0c0);
+}
+
+.league-progress-fill.to-gold {
+  background: linear-gradient(90deg, #c0c0c0, #ffd700);
+}
+
+.league-progress-fill.at-gold {
+  background: linear-gradient(90deg, #ffd700, #ffea00);
+}
+
+.league-progress-hint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.lb-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.lb-tab {
+  flex: 1;
+  padding: 8px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid #ffffff10;
+  background: var(--bg-card);
+  color: var(--text-muted);
+}
+
+.lb-tab.active {
+  background: var(--accent);
+  color: #1a1a2e;
+  border-color: var(--accent);
+}
+
+.lb-tab.disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.leaderboard-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.lb-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid #ffffff06;
+  transition: transform 0.1s ease;
+}
+
+.lb-entry.self {
+  background: #2a3a57;
+  border-color: var(--accent);
+  border-width: 2px;
+}
+
+.lb-entry.top3 {
+  background: linear-gradient(135deg, #1f2b47, #2a2a1e);
+}
+
+.lb-rank {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 28px;
+  text-align: center;
+}
+
+.lb-rank.gold { color: #ffd700; }
+.lb-rank.silver { color: #c0c0c0; }
+.lb-rank.bronze { color: #cd7f32; }
+
+.lb-bear { font-size: 24px; }
+
+.lb-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-rp {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rp-color);
+  min-width: 50px;
+  text-align: right;
+}
+
+.lb-league-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.lb-empty {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.lb-self-separator {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 0;
+}
+
+.lb-loading {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 /* ================================================================
    SCROLLBAR
    ================================================================ */
@@ -1644,7 +1879,41 @@ html, body {
     <div class="arena-cost-hint">Победа: +50🍯 +15RP · Поражение: +5🍯 +2RP</div>
   </div>
 </div> <!-- ✅ ВОТ ЭТОГО ЗАКРЫТИЯ НЕ ХВАТАЛО -->
+    <!-- ======== TAB: League ======== -->
+    <div class="tab-content" id="tabLeague">
+      <div class="league-section">
+        <div class="season-header-card" id="seasonHeader">
+          <div class="season-title" id="seasonTitle">Сезон #1</div>
+          <div class="season-timer" id="seasonTimer">Загрузка...</div>
+        </div>
 
+        <div class="player-league-card" id="playerLeagueCard">
+          <div class="league-badge" id="leagueBadge">🥉</div>
+          <div class="league-info">
+            <div class="league-name bronze" id="leagueName">Bronze</div>
+            <div class="league-rp" id="leagueRp">0 RP за сезон</div>
+            <div class="league-rank" id="leagueRank">Позиция: —</div>
+          </div>
+        </div>
+
+        <div class="league-progress-section" id="leagueProgressSection">
+          <div class="league-progress-label" id="leagueProgressLabel">До Silver: — RP</div>
+          <div class="league-progress-bar">
+            <div class="league-progress-fill to-silver" id="leagueProgressFill" style="width:0%"></div>
+          </div>
+          <div class="league-progress-hint" id="leagueProgressHint"></div>
+        </div>
+
+        <div class="lb-tabs">
+          <div class="lb-tab active" id="lbTabAll">🌍 Все</div>
+          <div class="lb-tab disabled" id="lbTabFriends">👥 Друзья</div>
+        </div>
+
+        <div class="leaderboard-list" id="leaderboardList">
+          <div class="lb-loading">Загрузка рейтинга...</div>
+        </div>
+      </div>
+    </div>
 
 <!-- ======== TAB: More (Quests) ======== -->
 <div class="tab-content" id="tabMore">
@@ -1697,7 +1966,7 @@ html, body {
       <span class="nav-icon">⚔️</span>
       <span class="nav-label">Arena</span>
     </div>
-    <div class="nav-item disabled" data-tab="league">
+        <div class="nav-item" data-tab="league">
       <span class="nav-icon">🏆</span>
       <span class="nav-label">League</span>
     </div>
@@ -2789,7 +3058,159 @@ function flushTaps() {
     body: JSON.stringify({ taps }),
   }).catch(() => {});
 }
+/* ==============================================================
+   LEAGUE & LEADERBOARD
+   ============================================================== */
+const LEAGUE_ICONS = { gold: '🥇', silver: '🥈', bronze: '🥉' };
+const LEAGUE_NAMES = { gold: 'Gold', silver: 'Silver', bronze: 'Bronze' };
 
+let seasonData = null;
+let leaderboardData = null;
+let leagueLoaded = false;
+
+async function loadLeague() {
+  if (leagueLoaded) return;
+  try {
+    const [seasonRes, lbRes] = await Promise.all([
+      fetch(`${BASE_URL}/get-season`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${initData}`, 'Content-Type': 'application/json' },
+      }),
+      fetch(`${BASE_URL}/get-leaderboard`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${initData}`, 'Content-Type': 'application/json' },
+      }),
+    ]);
+
+    if (seasonRes.ok) {
+      seasonData = await seasonRes.json();
+      renderSeason();
+    }
+    if (lbRes.ok) {
+      leaderboardData = await lbRes.json();
+      renderLeaderboard();
+    }
+    leagueLoaded = true;
+  } catch (e) {
+    console.error('loadLeague error:', e);
+  }
+}
+
+function renderSeason() {
+  if (!seasonData) return;
+  const s = seasonData.season;
+  const p = seasonData.player;
+  const t = seasonData.thresholds;
+
+  // Season header
+  document.getElementById('seasonTitle').textContent = `⚔️ Сезон #${s.number}`;
+  document.getElementById('seasonTimer').textContent =
+    s.days_left > 0 ? `Осталось ${s.days_left} дн.` : 'Сезон завершается...';
+
+  // Player league
+  const league = p.estimated_league;
+  document.getElementById('leagueBadge').textContent = LEAGUE_ICONS[league];
+  const nameEl = document.getElementById('leagueName');
+  nameEl.textContent = LEAGUE_NAMES[league];
+  nameEl.className = 'league-name ' + league;
+  document.getElementById('leagueRp').textContent = `${p.season_rp} RP за сезон`;
+  document.getElementById('leagueRank').textContent =
+    `Позиция: #${p.rank} из ${p.total_players}`;
+
+  // Progress bar
+  const progLabel = document.getElementById('leagueProgressLabel');
+  const progFill = document.getElementById('leagueProgressFill');
+  const progHint = document.getElementById('leagueProgressHint');
+
+  if (league === 'gold') {
+    progLabel.textContent = '🥇 Вы в Gold!';
+    progFill.style.width = '100%';
+    progFill.className = 'league-progress-fill at-gold';
+    progHint.textContent = `Топ ${t.gold_top} игроков`;
+  } else if (league === 'silver') {
+    const needed = t.gold_min_rp - p.season_rp;
+    progLabel.textContent = `До Gold: ${Math.max(0, needed)} RP`;
+    const pct = t.gold_min_rp > 0 ? (p.season_rp / t.gold_min_rp) * 100 : 0;
+    progFill.style.width = `${Math.min(100, pct)}%`;
+    progFill.className = 'league-progress-fill to-gold';
+    progHint.textContent = `Gold: топ ${t.gold_top} (нужно ~${t.gold_min_rp} RP)`;
+  } else {
+    const needed = t.silver_min_rp - p.season_rp;
+    progLabel.textContent = `До Silver: ${Math.max(0, needed)} RP`;
+    const pct = t.silver_min_rp > 0 ? (p.season_rp / t.silver_min_rp) * 100 : 0;
+    progFill.style.width = `${Math.min(100, pct)}%`;
+    progFill.className = 'league-progress-fill to-silver';
+    progHint.textContent = `Silver: топ ${t.silver_top} (нужно ~${t.silver_min_rp} RP)`;
+  }
+}
+
+function renderLeaderboard() {
+  if (!leaderboardData) return;
+  const list = document.getElementById('leaderboardList');
+  list.innerHTML = '';
+
+  const lb = leaderboardData.leaderboard;
+
+  if (!lb || lb.length === 0) {
+    list.innerHTML = '<div class="lb-empty">Пока никто не играл в этом сезоне 🐻</div>';
+    return;
+  }
+
+  lb.forEach(entry => {
+    const el = document.createElement('div');
+    el.className = 'lb-entry' +
+      (entry.is_self ? ' self' : '') +
+      (entry.rank <= 3 ? ' top3' : '');
+
+    let rankClass = 'bronze';
+    if (entry.league === 'gold') rankClass = 'gold';
+    else if (entry.league === 'silver') rankClass = 'silver';
+
+    el.innerHTML = `
+      <span class="lb-rank ${rankClass}">#${entry.rank}</span>
+      <span class="lb-bear">🐻</span>
+      <span class="lb-name">${escapeHtml(entry.bear_name)}</span>
+      <span class="lb-rp">${entry.season_rp}</span>
+      <span class="lb-league-icon">${LEAGUE_ICONS[entry.league]}</span>
+    `;
+    list.appendChild(el);
+  });
+
+  // If player not in top 50, show separator + self
+  if (leaderboardData.self) {
+    const sep = document.createElement('div');
+    sep.className = 'lb-self-separator';
+    sep.textContent = '· · ·';
+    list.appendChild(sep);
+
+    const s = leaderboardData.self;
+    const selfEl = document.createElement('div');
+    selfEl.className = 'lb-entry self';
+    selfEl.innerHTML = `
+      <span class="lb-rank">#${s.rank}</span>
+      <span class="lb-bear">🐻</span>
+      <span class="lb-name">${escapeHtml(s.bear_name)}</span>
+      <span class="lb-rp">${s.season_rp}</span>
+      <span class="lb-league-icon">${LEAGUE_ICONS[s.league]}</span>
+    `;
+    list.appendChild(selfEl);
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// Load league when tab is opened
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    if (item.dataset.tab === 'league') {
+      loadLeague();
+    }
+  });
+});
 /* ==============================================================
    BOOT
    ============================================================== */
