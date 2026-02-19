@@ -3601,7 +3601,11 @@ async function loadReferralStats(force = false) {
   }
 }
 
-document.getElementById('inviteBtn')?.addEventListener('click', async () => {
+document.addEventListener('click', (e) => {
+  const t = e.target;
+  if (!(t instanceof HTMLElement)) return;
+  if (t.id !== 'inviteBtn') return;
+
   const url = buildReferralUrl();
   if (!url) {
     tg?.showAlert?.('Не удалось получить TG ID');
@@ -3611,16 +3615,15 @@ document.getElementById('inviteBtn')?.addEventListener('click', async () => {
   const text = '🐻 HoneyBear: прокачай медведя, сыграй арену и получи бонус по моей ссылке 🎁';
   const share = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
 
-  // ✅ самый надежный вариант внутри Telegram
   if (tg?.openTelegramLink) {
     tg.openTelegramLink(share);
     tg?.HapticFeedback?.impactOccurred?.('light');
-    return;
+  } else {
+    // в некоторых webview window.open может быть заблокирован — но это хотя бы попытка
+    location.href = share;
   }
-
-  // ✅ запасной вариант
-  window.open(share, '_blank');
 });
+
 
 
 // Load league when tab is opened
