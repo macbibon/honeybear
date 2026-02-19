@@ -3853,19 +3853,36 @@ function renderAmberPacks(packs) {
 function renderSkinsGrid(type, catalog, owned, equipped, amber) {
   const wrap = document.getElementById('skinsGrid');
   if (!wrap) return;
+
   const list = (catalog?.[type] || []);
   const ownedList = owned?.[type] || [];
   const eq = equipped?.[type] || null;
 
   wrap.innerHTML = list.map(it => {
-    const isOwned = it.priceAmber === 0 || ownedList.includes(it.id);
-    const isEquipped = (eq === it.id) || (type === 'background' && (eq || 'forest') === it.id) || (type === 'color' && (eq || 'brown') === it.id);
-    const canBuy = !isOwned && (amber >= it.priceAmber);
+    // ✅ цена в amber (поддержка разных ключей из API)
+    const priceAmber = Number(it.priceAmber ?? it.price_amber ?? it.price ?? it.amber ?? 0);
+    const isFree = priceAmber === 0;
+
+    // ✅ бесплатные считаем "owned" даже если их нет в inventory
+    const isOwned = isFree || ownedList.includes(it.id);
+
+    // ✅ дефолты для background/color если eq null
+    const effectiveEq =
+      (type === 'background') ? (eq || 'forest') :
+      (type === 'color') ? (eq || 'brown') :
+      eq;
+
+    const isEquipped = effectiveEq === it.id;
+
+    const canBuy = !isOwned && (amber >= priceAmber);
+
     const emoji = skinEmoji(type, it.id);
     const title = prettySkinName(type, it.id);
-    const price = it.priceAmber === 0 ? 'Бесплатно' : `${it.priceAmber} 💎`;
+    const priceText = isFree ? 'Бесплатно' : `${priceAmber} 💎`;
+
     const badges = [
-      isOwned ? '<span class="skin-badge">✅ Куплен</span>' : '',
+      isOwned && !isFree ? '<span class="skin-badge">✅ Куплен</span>' : '',
+      isFree ? '<span class="skin-badge">🆓 Free</span>' : '',
       isEquipped ? '<span class="skin-badge">⭐ Надет</span>' : '',
       it.seasonal ? '<span class="skin-badge">🎄 Сезонный</span>' : '',
     ].filter(Boolean).join('');
@@ -3874,6 +3891,7 @@ function renderSkinsGrid(type, catalog, owned, equipped, amber) {
     if (!isOwned) {
       btnHtml = `<button class="shop-btn" data-act="buy" data-type="${type}" data-id="${it.id}" ${canBuy ? '' : 'disabled'}>Купить</button>`;
     } else {
+      // hat/accessory можно "снять"
       if ((type === 'hat' || type === 'accessory') && isEquipped) {
         btnHtml = `<button class="shop-btn secondary" data-act="unequip" data-type="${type}">Снять</button>`;
       } else {
@@ -3887,7 +3905,7 @@ function renderSkinsGrid(type, catalog, owned, equipped, amber) {
           <div class="skin-preview">${emoji || '✨'}</div>
           <div class="skin-meta">
             <div class="skin-title">${title}</div>
-            <div class="skin-price">${price}</div>
+            <div class="skin-price">${priceText}</div>
             <div class="skin-badges">${badges}</div>
           </div>
         </div>
@@ -3895,6 +3913,35 @@ function renderSkinsGrid(type, catalog, owned, equipped, amber) {
       </div>
     `;
   }).join('');
+
+  wrap.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const act = btn.dataset.act;
+      const t = btn.dataset.type;
+      const id = btn.dataset.id;
+      btn.disabled = true;
+      try {
+        if (act === 'buy') {
+          await apiPost('buy-skin', { item_type: t, item_id: id });
+          tg?.HapticFeedback?.notificationOccurred?.('success');
+        } else if (act === 'equip') {
+          await apiPost('equip-skin', { item_type: t, item_id: id });
+          tg?.HapticFeedback?.impactOccurred?.('light');
+        } else if (act === 'unequip') {
+          await apiPost('equip-skin', { item_type: t, item_id: null });
+          tg?.HapticFeedback?.impactOccurred?.('light');
+        }
+        await loadState();
+        await loadShop(true);
+      } catch (e) {
+        tg?.HapticFeedback?.notificationOccurred?.('error');
+        tg?.showAlert?.(e?.message || 'Ошибка');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+}
 
   wrap.querySelectorAll('button[data-act]').forEach(btn => {
     btn.addEventListener('click', async () => {
