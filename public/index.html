@@ -2061,8 +2061,10 @@ async function feedBear(foodType) {
       body: JSON.stringify({ food_type: foodType }),
     });
     const data = await res.json();
-    if (!res.ok) {
-      tg?.showAlert?.(data.error || 'Ошибка кормления');
+        if (!res.ok) {
+      const errMsg = data.error || 'Ошибка кормления';
+      console.error('FEED ERROR:', res.status, errMsg);
+      alert('Feed error: ' + res.status + ' — ' + errMsg);
       return;
     }
     gameState = data.state;
@@ -2072,6 +2074,7 @@ async function feedBear(foodType) {
     tg?.HapticFeedback?.impactOccurred?.('medium');
   } catch (err) {
     console.error('feed error:', err);
+    alert('Network error: ' + err.message);;
     tg?.showAlert?.('Ошибка сети');
   } finally {
     document.querySelectorAll('.food-item').forEach(i => i.classList.remove('loading'));
