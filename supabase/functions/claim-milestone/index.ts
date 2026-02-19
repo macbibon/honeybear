@@ -1,7 +1,6 @@
-// supabase/functions/claim-all-bonus/index.ts
+// supabase/functions/claim-milestone/index.ts
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-import { awardReferralPassive } from "../_shared/referrals.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -13,7 +12,7 @@ async function hmacSHA256(key: Uint8Array, data: Uint8Array): Promise<Uint8Array
   return new Uint8Array(await crypto.subtle.sign("HMAC", k, data));
 }
 function hex(buf: Uint8Array): string {
-  return [...buf].map(b => b.toString(16).padStart(2, "0")).join("");
+  return [...buf].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 async function validateInitData(initData: string): Promise<number> {
   const params = new URLSearchParams(initData);
@@ -33,6 +32,7 @@ async function validateInitData(initData: string): Promise<number> {
   if (!user.id) throw new Error("missing user.id");
   return user.id;
 }
+
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -40,7 +40,13 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const ALL_BONUS = { honey: 100, amber: 3 };
+const REWARDS: Record<number, { honey: number; amber: number; skin: string }> = {
+  3: { honey: 500, amber: 5, skin: "friend_scarf" },
+  5: { honey: 1000, amber: 10, skin: "friend_hat" },
+  10: { honey: 2500, amber: 20, skin: "friend_glow" },
+  25: { honey: 8000, amber: 50, skin: "friend_king" },
+  50: { honey: 20000, amber: 120, skin: "friend_legend" },
+};
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -60,62 +66,52 @@ serve(async (req: Request) => {
     if (!initData) return json({ error: "missing initData" }, 401);
     const tgId = await validateInitData(initData);
 
-    const { data: user, error: ue } = await supabase
-      .from("users").select("*").eq("tg_id", tgId).maybeSingle();
-    if (ue) throw ue;
-    if (!user) return json({ error: "user not found" }, 404);
+    const body = await req.json().catch(() => ({}));
+    const milestone = Number(body.milestone);
+    if (!REWARDS[milestone]) return json({ error: "invalid milestone" }, 400);
 
-    const today = new Date().toISOString().slice(0, 10);
-    const { data: dq, error: dqErr } = await supabase
-      .from("daily_quests").select("*")
-      .eq("user_id", user.id).eq("date", today).maybeSingle();
-    if (dqErr) throw dqErr;
-    if (!dq) return json({ error: "no quests today" }, 404);
+    const { data: me, error: meErr } = await supabase
+      .from("users")
+      .select("id, honey, amber, referral_activated_count")
+      .eq("tg_id", tgId)
+      .maybeSingle();
+    if (meErr) throw meErr;
+    if (!me) return json({ error: "user not found" }, 404);
 
-    // Check all 3 done and claimed
-    for (let i = 1; i <= 3; i++) {
-      if (!dq[`quest_${i}_done`]) return json({ error: "not all quests completed" }, 400);
-      if (!dq[`quest_${i}_claimed`]) return json({ error: "claim individual rewards first" }, 400);
+    if (Number(me.referral_activated_count || 0) < milestone) {
+      return json({ error: "milestone_not_reached" }, 400);
     }
 
-    if (dq.all_bonus_claimed) return json({ error: "already claimed" }, 400);
+    // Ensure row exists.
+    await supabase.from("referral_milestones").upsert({ user_id: me.id, milestone }, { onConflict: "user_id,milestone" });
+    const { data: row, error: rErr } = await supabase
+      .from("referral_milestones")
+      .select("claimed")
+      .eq("user_id", me.id)
+      .eq("milestone", milestone)
+      .maybeSingle();
+    if (rErr) throw rErr;
+    if (row?.claimed) return json({ error: "already_claimed" }, 400);
 
-    // Mark claimed
-    await supabase.from("daily_quests").update({
-      all_bonus_claimed: true,
-    }).eq("id", dq.id);
+    const reward = REWARDS[milestone];
 
-    // Give rewards
-    const newHoney = user.honey + ALL_BONUS.honey;
-    const newAmber = (user.amber || 0) + ALL_BONUS.amber;
-    await supabase.from("users").update({
-      honey: newHoney, amber: newAmber,
-    }).eq("id", user.id);
+    await supabase.from("referral_milestones").update({ claimed: true }).eq("user_id", me.id).eq("milestone", milestone);
+
+    const newHoney = Number(me.honey || 0) + reward.honey;
+    const newAmber = Number(me.amber || 0) + reward.amber;
+    await supabase.from("users").update({ honey: newHoney, amber: newAmber }).eq("id", me.id);
 
     await supabase.from("transactions").insert({
-      user_id: user.id,
-      type: "quest_all_bonus",
-      honey_delta: ALL_BONUS.honey,
-      idempotency_key: `quest_all_${user.id}_${today}`,
+      user_id: me.id,
+      type: `referral_milestone_${milestone}`,
+      honey_delta: reward.honey,
+      amber_delta: reward.amber,
+      idempotency_key: `ref_milestone_${me.id}_${milestone}`,
     });
 
-    if (ALL_BONUS.honey > 0) {
-      await awardReferralPassive({
-        supabase,
-        referredUserId: user.id,
-        honeyEarned: ALL_BONUS.honey,
-        sourceIdempotencyKey: `quest_all_${user.id}_${today}`,
-      });
-    }
-
-    return json({
-      success: true,
-      reward: ALL_BONUS,
-      honey: Math.floor(newHoney * 100) / 100,
-      amber: newAmber,
-    });
+    return json({ ok: true, reward });
   } catch (err: any) {
-    console.error("claim-all-bonus error:", err);
+    console.error("claim-milestone error:", err);
     return json({ error: err.message }, 500);
   }
 });

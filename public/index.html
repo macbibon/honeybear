@@ -1456,6 +1456,178 @@ html, body {
   font-size: 13px;
 }
 
+/* ================================================================
+   FRIENDS / REFERRALS
+   ================================================================ */
+.friends-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px;
+  border: 1px solid #ffffff10;
+  margin-bottom: 20px;
+}
+
+.friends-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.friends-stat {
+  background: #ffffff08;
+  border: 1px solid #ffffff10;
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+}
+
+.friends-stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.friends-stat-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.friends-invite-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #5e35b1, #7e57c2);
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.friends-invite-btn:active { transform: scale(0.98); }
+
+.friends-share-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.friends-subtitle {
+  margin-top: 14px;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.milestone-list, .friends-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.milestone-item, .friend-item {
+  background: #ffffff08;
+  border: 1px solid #ffffff10;
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.milestone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.milestone-title {
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.milestone-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.milestone-btn {
+  padding: 9px 12px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.milestone-btn.ready { background: linear-gradient(135deg, #f5a623, #ff8c00); color: #1a1a2e; }
+.milestone-btn.locked { background: #333; color: #777; cursor: default; }
+.milestone-btn.claimed { background: #1a3a1a; color: #4caf50; cursor: default; }
+
+.friend-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.friend-name {
+  font-weight: 800;
+}
+
+.friend-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #00000040;
+  border: 1px solid #ffffff14;
+  color: var(--text-secondary);
+}
+.badge.good { color: #7CFC8B; }
+.badge.warn { color: #ffcc80; }
+.badge.bad  { color: #ff8a80; }
+
+.friend-meta {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.friend-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.friend-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #ffffff10;
+  color: var(--text);
+}
+.friend-btn:active { transform: scale(0.98); }
+
+.friends-loading {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 10px 0;
+}
+
 
 /* ================================================================
    LEAGUE & LEADERBOARD
@@ -1952,6 +2124,39 @@ html, body {
         Выполни все 3 квеста
       </button>
     </div>
+
+    <!-- ======== Friends / Referrals ======== -->
+    <div class="upgrades-title">👥 Друзья</div>
+
+    <div class="friends-card" id="friendsCard">
+      <div class="friends-stats">
+        <div class="friends-stat">
+          <div class="friends-stat-label">Приглашено</div>
+          <div class="friends-stat-value" id="refInvited">0</div>
+        </div>
+        <div class="friends-stat">
+          <div class="friends-stat-label">Активных</div>
+          <div class="friends-stat-value" id="refActivated">0</div>
+        </div>
+        <div class="friends-stat">
+          <div class="friends-stat-label">Доход сегодня</div>
+          <div class="friends-stat-value" id="refIncomeToday">0</div>
+        </div>
+      </div>
+
+      <button class="friends-invite-btn" id="inviteBtn">Пригласить</button>
+      <div class="friends-share-hint" id="shareHint">Ссылка скопируется/расшарится через Telegram</div>
+
+      <div class="friends-subtitle">🎯 Milestones</div>
+      <div class="milestone-list" id="milestoneList">
+        <div class="friends-loading">Загрузка milestones...</div>
+      </div>
+
+      <div class="friends-subtitle">📜 Список друзей</div>
+      <div class="friends-list" id="friendsList">
+        <div class="friends-loading">Загрузка друзей...</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1986,6 +2191,8 @@ html, body {
    CONFIG
    ============================================================== */
 const BASE_URL = 'https://xqaywuuaahcsjdipmgdg.supabase.co/functions/v1';
+// TODO: поставь юзернейм бота (без @), чтобы ссылка шаринга была корректной
+const BOT_USERNAME = 'BotName';
 
 /* ==============================================================
    TELEGRAM
@@ -2194,6 +2401,9 @@ async function loadState() {
 
     // Load quests
     loadQuests();
+
+    // Try apply referral from startapp (one-time)
+    tryApplyReferralOnce();
 
     // First visit check
     const name = (gameState.bear_name || "").trim();
@@ -2763,6 +2973,10 @@ document.querySelectorAll('.nav-item:not(.disabled)').forEach(item => {
     const tabId = 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1);
     const target = document.getElementById(tabId);
     if (target) target.classList.add('active');
+
+    if (tab === 'more') {
+      loadReferralStats();
+    }
   });
 });
 
@@ -2804,6 +3018,51 @@ function showError(msg) {
   document.getElementById('errorScreen').classList.add('visible');
 }
 function hideError()    { document.getElementById('errorScreen').classList.remove('visible'); }
+
+async function apiPost(path, body = undefined) {
+  const res = await fetch(`${BASE_URL}/${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${initData}`,
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : '{}',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data;
+}
+
+function getStartParamRefTgId() {
+  // Telegram Mini App: initDataUnsafe.start_param should contain what was passed in startapp.
+  const sp = tg?.initDataUnsafe?.start_param;
+  if (!sp) return null;
+  const m = String(sp).match(/^ref_(\d+)$/);
+  if (!m) return null;
+  return Number(m[1]);
+}
+
+async function tryApplyReferralOnce() {
+  const refTgId = getStartParamRefTgId();
+  if (!refTgId || !gameState?.tg_id) return;
+  const key = `ref_applied_${gameState.tg_id}`;
+  if (localStorage.getItem(key) === '1') return;
+  try {
+    const r = await apiPost('apply-referral', { ref_tg_id: refTgId });
+    localStorage.setItem(key, '1');
+    if (r?.ok && !r?.already_applied) {
+      tg?.showPopup?.({
+        title: '🎁 Реферал!',
+        message: 'Вы получили мгновенную награду: +200 🍯 и +3 💎',
+        buttons: [{ type: 'ok', text: 'Ок' }],
+      });
+      // Reload state to reflect reward
+      await loadState();
+    }
+  } catch (e) {
+    console.warn('apply-referral skipped:', e?.message || e);
+  }
+}
 /* ==============================================================
    DAILY QUESTS & STREAK
    ============================================================== */
@@ -3202,6 +3461,160 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+/* ==============================================================
+   REFERRALS UI
+   ============================================================== */
+let referralCache = null;
+
+function buildReferralUrl() {
+  const tgId = gameState?.tg_id;
+  if (!tgId) return null;
+  return `https://t.me/${BOT_USERNAME}/app?startapp=ref_${tgId}`;
+}
+
+function renderMilestones(ms) {
+  const wrap = document.getElementById('milestoneList');
+  if (!wrap) return;
+  if (!ms || ms.length === 0) {
+    wrap.innerHTML = '<div class="friends-loading">Пока нет milestones</div>';
+    return;
+  }
+  wrap.innerHTML = ms.map(m => {
+    const statusClass = m.claimed ? 'claimed' : (m.claimable ? 'ready' : 'locked');
+    const btnText = m.claimed ? 'Забрано' : (m.claimable ? 'Забрать' : 'Закрыто');
+    return `
+      <div class="milestone-item">
+        <div class="milestone-row">
+          <div>
+            <div class="milestone-title">${m.milestone} активных друзей</div>
+            <div class="milestone-meta">Награда: 🍯 + 💎 + скин</div>
+          </div>
+          <button class="milestone-btn ${statusClass}" data-milestone="${m.milestone}" ${m.claimable ? '' : 'disabled'}>${btnText}</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('.milestone-btn.ready').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const milestone = Number(btn.dataset.milestone);
+      btn.disabled = true;
+      try {
+        const r = await apiPost('claim-milestone', { milestone });
+        tg?.HapticFeedback?.notificationOccurred?.('success');
+        tg?.showPopup?.({
+          title: '🎁 Награда!',
+          message: `+${r.reward.honey} 🍯  +${r.reward.amber} 💎\nСкин: ${r.reward.skin}`,
+          buttons: [{ type: 'ok', text: 'Ок' }],
+        });
+        await loadState();
+        await loadReferralStats(true);
+      } catch (e) {
+        tg?.HapticFeedback?.notificationOccurred?.('error');
+        tg?.showAlert?.(e?.message || 'Ошибка');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+function renderFriends(list) {
+  const wrap = document.getElementById('friendsList');
+  if (!wrap) return;
+  if (!list || list.length === 0) {
+    wrap.innerHTML = '<div class="friends-loading">Пока никого</div>';
+    return;
+  }
+
+  wrap.innerHTML = list.map(r => {
+    const name = r.friend?.bear_name ? escapeHtml(r.friend.bear_name) : 'Медведь';
+    const rp = r.friend?.rp ?? 0;
+    const status = r.status;
+    const isActive = status === 'activated';
+    const badgeClass = isActive ? 'good' : 'warn';
+    const badgeText = isActive ? 'Активирован' : 'Не активен';
+    const fraud = r.fraud_flag ? '<span class="badge bad">Fraud</span>' : '';
+
+    return `
+      <div class="friend-item">
+        <div class="friend-top">
+          <div class="friend-name">🐻 ${name}</div>
+          <div class="friend-badges">
+            <span class="badge ${badgeClass}">${badgeText}</span>
+            ${fraud}
+          </div>
+        </div>
+        <div class="friend-meta">
+          <div>⚔️ ${rp} RP</div>
+          <div>💸 Доход: ${formatNum(r.passive_earned)} 🍯</div>
+        </div>
+        <div class="friend-actions">
+          ${!isActive ? '<button class="friend-btn remind-btn">Напомнить</button>' : '<button class="friend-btn" disabled>✅ Ок</button>'}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('.remind-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const url = buildReferralUrl();
+      if (!url) return;
+      const text = '🔥 Я прокачиваю медведя в HoneyBear! Заходи по моей ссылке — будет награда 🎁';
+      if (tg?.shareUrl) {
+        tg.shareUrl(url, text);
+      } else {
+        navigator.clipboard?.writeText(url);
+        tg?.showAlert?.('Ссылка скопирована');
+      }
+    });
+  });
+}
+
+async function loadReferralStats(force = false) {
+  if (!gameState) return;
+  if (referralCache && !force) {
+    // quick render
+    document.getElementById('refInvited').textContent = referralCache.stats.invited;
+    document.getElementById('refActivated').textContent = referralCache.stats.activated;
+    document.getElementById('refIncomeToday').textContent = formatNum(referralCache.stats.income_today);
+    renderMilestones(referralCache.milestones);
+    renderFriends(referralCache.friends);
+    return;
+  }
+  try {
+    document.getElementById('milestoneList').innerHTML = '<div class="friends-loading">Загрузка milestones...</div>';
+    document.getElementById('friendsList').innerHTML = '<div class="friends-loading">Загрузка друзей...</div>';
+    const data = await apiPost('get-referral-stats');
+    referralCache = data;
+    document.getElementById('refInvited').textContent = data.stats.invited;
+    document.getElementById('refActivated').textContent = data.stats.activated;
+    document.getElementById('refIncomeToday').textContent = formatNum(data.stats.income_today);
+    renderMilestones(data.milestones);
+    renderFriends(data.friends);
+  } catch (e) {
+    console.warn('get-referral-stats error:', e);
+    document.getElementById('milestoneList').innerHTML = '<div class="friends-loading">Ошибка загрузки</div>';
+    document.getElementById('friendsList').innerHTML = '<div class="friends-loading">Ошибка загрузки</div>';
+  }
+}
+
+document.getElementById('inviteBtn')?.addEventListener('click', async () => {
+  const url = buildReferralUrl();
+  if (!url) return;
+  const text = '🐻 HoneyBear: прокачай медведя, сыграй арену и получи бонус по моей ссылке 🎁';
+  if (tg?.shareUrl) {
+    tg.shareUrl(url, text);
+  } else {
+    try {
+      await navigator.clipboard.writeText(url);
+      tg?.showAlert?.('Ссылка скопирована');
+    } catch {
+      prompt('Скопируй ссылку:', url);
+    }
+  }
+});
 
 // Load league when tab is opened
 document.querySelectorAll('.nav-item').forEach(item => {

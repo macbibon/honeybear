@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { awardReferralPassive, processReferralActivation } from "../_shared/referrals.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -197,6 +198,14 @@ serve(async (req: Request) => {
 }).eq("id", user.id);
     if (userUpdErr) throw userUpdErr;
 
+    // Referral activation (referred reached 200 RP)
+    const rpAfter = (user.rp || 0) + rpReward;
+    await processReferralActivation({
+      supabase,
+      referredUserId: user.id,
+      referredRpAfter: rpAfter,
+    });
+
     // Log transaction
     const { error: txErr } = await supabase.from("transactions").insert({
       user_id: user.id,
@@ -206,6 +215,16 @@ serve(async (req: Request) => {
       idempotency_key: `arena_result_${arenaId}`,
     });
     if (txErr) throw txErr;
+
+    // Referral passive income from honey reward
+    if (honeyReward > 0) {
+      await awardReferralPassive({
+        supabase,
+        referredUserId: user.id,
+        honeyEarned: honeyReward,
+        sourceIdempotencyKey: `arena_result_${arenaId}`,
+      });
+    }
 
     // Update quest progress
     await updateQuestProgress(user.id, "play_arena", 1);
