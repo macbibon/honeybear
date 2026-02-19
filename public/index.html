@@ -3562,12 +3562,13 @@ function renderFriends(list) {
       const url = buildReferralUrl();
       if (!url) return;
       const text = '🔥 Я прокачиваю медведя в HoneyBear! Заходи по моей ссылке — будет награда 🎁';
-      if (tg?.shareUrl) {
-        tg.shareUrl(url, text);
-      } else {
-        navigator.clipboard?.writeText(url);
-        tg?.showAlert?.('Ссылка скопирована');
-      }
+     const share = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+if (tg?.openTelegramLink) {
+  tg.openTelegramLink(share);
+  tg?.HapticFeedback?.impactOccurred?.('light');
+} else {
+  window.open(share, '_blank');
+}
     });
   });
 }
@@ -3602,19 +3603,25 @@ async function loadReferralStats(force = false) {
 
 document.getElementById('inviteBtn')?.addEventListener('click', async () => {
   const url = buildReferralUrl();
-  if (!url) return;
-  const text = '🐻 HoneyBear: прокачай медведя, сыграй арену и получи бонус по моей ссылке 🎁';
-  if (tg?.shareUrl) {
-    tg.shareUrl(url, text);
-  } else {
-    try {
-      await navigator.clipboard.writeText(url);
-      tg?.showAlert?.('Ссылка скопирована');
-    } catch {
-      prompt('Скопируй ссылку:', url);
-    }
+  if (!url) {
+    tg?.showAlert?.('Не удалось получить TG ID');
+    return;
   }
+
+  const text = '🐻 HoneyBear: прокачай медведя, сыграй арену и получи бонус по моей ссылке 🎁';
+  const share = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+
+  // ✅ самый надежный вариант внутри Telegram
+  if (tg?.openTelegramLink) {
+    tg.openTelegramLink(share);
+    tg?.HapticFeedback?.impactOccurred?.('light');
+    return;
+  }
+
+  // ✅ запасной вариант
+  window.open(share, '_blank');
 });
+
 
 // Load league when tab is opened
 document.querySelectorAll('.nav-item').forEach(item => {
