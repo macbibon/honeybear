@@ -9,8 +9,9 @@ type SkinItem = {
   seasonal?: boolean;
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") return cors();
+
   try {
     const auth = req.headers.get("Authorization") || "";
     const initData = auth.replace(/^Bearer\s+/i, "").trim();
@@ -20,9 +21,7 @@ serve(async (req) => {
 
     const { data: user, error: uErr } = await supabase
       .from("users")
-      .select(
-        "id,tg_id,honey,amber,rp,satiety,equipped_hat,equipped_accessory,equipped_background,equipped_color,bear_name",
-      )
+      .select("id,tg_id,honey,amber,equipped_hat,equipped_accessory,equipped_background,equipped_color")
       .eq("tg_id", tgUser.id)
       .maybeSingle();
 
@@ -36,7 +35,7 @@ serve(async (req) => {
 
     if (iErr) throw iErr;
 
-    // owned -> arrays per type (как ждёт UI)
+    // owned как ожидает UI: массивы по типам
     const ownedByType: Record<string, string[]> = {
       hat: [],
       accessory: [],
@@ -45,11 +44,13 @@ serve(async (req) => {
     };
 
     for (const row of inv || []) {
-      if (!ownedByType[row.item_type]) ownedByType[row.item_type] = [];
-      ownedByType[row.item_type].push(row.item_id);
+      const t = String(row.item_type);
+      const id = String(row.item_id);
+      if (!ownedByType[t]) ownedByType[t] = [];
+      ownedByType[t].push(id);
     }
 
-    // helper: normalize catalog items to {id, priceAmber, seasonal}
+    // normalize catalog items => {id, priceAmber, seasonal}
     const normalizedCatalog: Record<string, SkinItem[]> = {};
     for (const [t, items] of Object.entries(SKINS_CATALOG)) {
       normalizedCatalog[t] = (items as any[]).map((it) => {
@@ -57,11 +58,11 @@ serve(async (req) => {
         return {
           id: String(it.id),
           priceAmber,
-          seasonal: !!it.seasonal,
+          seasonal: Boolean(it.seasonal),
         };
       });
 
-      // free items считаем owned (если их нет в inventory)
+      // free items считаем owned
       for (const it of normalizedCatalog[t]) {
         if (it.priceAmber === 0 && !ownedByType[t].includes(it.id)) {
           ownedByType[t].push(it.id);
@@ -71,17 +72,18 @@ serve(async (req) => {
 
     return json({
       catalog: normalizedCatalog,
-      packs: AMBER_PACKS, // ✅ как ждёт UI
-      owned: ownedByType, // ✅ как ждёт UI
+      packs: AMBER_PACKS,
+      owned: ownedByType,
       equipped: {
         hat: user.equipped_hat,
         accessory: user.equipped_accessory,
         background: user.equipped_background,
         color: user.equipped_color,
       },
-      balances: { amber: user.amber, honey: user.honey }, // ✅ как ждёт UI
+      balances: { amber: user.amber, honey: user.honey },
     });
-  } catch (e) {
-    return json({ error: e?.message || String(e) }, 400);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return json({ error: msg }, 400);
   }
 });

@@ -3995,35 +3995,6 @@ function renderSkinsGrid(type, catalog, owned, equipped, amber) {
   });
 }
 
-  wrap.querySelectorAll('button[data-act]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const act = btn.dataset.act;
-      const t = btn.dataset.type;
-      const id = btn.dataset.id;
-      btn.disabled = true;
-      try {
-        if (act === 'buy') {
-          await apiPost('buy-skin', { item_type: t, item_id: id });
-          tg?.HapticFeedback?.notificationOccurred?.('success');
-        } else if (act === 'equip') {
-          await apiPost('equip-skin', { item_type: t, item_id: id });
-          tg?.HapticFeedback?.impactOccurred?.('light');
-        } else if (act === 'unequip') {
-          await apiPost('equip-skin', { item_type: t, item_id: null });
-          tg?.HapticFeedback?.impactOccurred?.('light');
-        }
-        await loadState();
-        await loadShop(true);
-      } catch (e) {
-        tg?.HapticFeedback?.notificationOccurred?.('error');
-        tg?.showAlert?.(e?.message || 'Ошибка');
-      } finally {
-        btn.disabled = false;
-      }
-    });
-  });
-
-
 async function loadShop(force = false) {
   if (shopCache && !force) {
     document.getElementById('shopAmberBalance').textContent = formatNum(shopCache.balances?.amber || 0);
