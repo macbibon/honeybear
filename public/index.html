@@ -2206,6 +2206,24 @@ if (tg) {
   tg.setBackgroundColor('#1a1a2e');
   initData = tg.initData || '';
 }
+function debugTg() {
+  const w = window.Telegram?.WebApp;
+  const info = {
+    hasTelegram: !!window.Telegram,
+    hasWebApp: !!w,
+    initDataLen: (w?.initData || '').length,
+    startParam: w?.initDataUnsafe?.start_param,
+    user: w?.initDataUnsafe?.user,
+    gameStateKeys: gameState ? Object.keys(gameState) : null,
+    gameStateTgId: gameState?.tg_id,
+  };
+  tg?.showPopup?.({
+    title: 'TG DEBUG',
+    message: JSON.stringify(info, null, 2).slice(0, 3500),
+    buttons: [{ type: 'ok', text: 'OK' }],
+  });
+}
+
 
 /* ==============================================================
    STATE
