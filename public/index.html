@@ -154,6 +154,52 @@ html, body {
   position: relative;
 }
 
+/* ================================================================
+   SKINS (CSS LAYERS)
+   ================================================================ */
+.bear-wrap {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bear-base {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 110px;
+  line-height: 1;
+}
+
+.bear-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 60px;
+  pointer-events: none;
+}
+
+.bear-layer.hat { transform: translateY(-36px); font-size: 58px; }
+.bear-layer.acc { transform: translateY(10px); font-size: 52px; }
+
+/* Backgrounds */
+.bear-area.bg-forest { background: radial-gradient(circle at 30% 20%, #2ecc71aa, transparent 55%), linear-gradient(180deg, #163b2d, transparent); border-radius: 22px; }
+.bear-area.bg-mountains { background: radial-gradient(circle at 70% 20%, #74b9ffaa, transparent 55%), linear-gradient(180deg, #1b2a4a, transparent); border-radius: 22px; }
+.bear-area.bg-winter { background: radial-gradient(circle at 50% 20%, #ffffffaa, transparent 55%), linear-gradient(180deg, #2d3a55, transparent); border-radius: 22px; }
+.bear-area.bg-sakura { background: radial-gradient(circle at 30% 20%, #ffb3c6aa, transparent 55%), linear-gradient(180deg, #3a1f2e, transparent); border-radius: 22px; }
+
+/* Color filters (v1: hue/brightness on emoji) */
+.bear-color-brown { filter: none; }
+.bear-color-white { filter: brightness(1.4) saturate(0.3); }
+.bear-color-panda { filter: grayscale(0.9) contrast(1.2); }
+
 .bear-name-label {
   margin-top: 4px;
   font-size: 22px;
@@ -1514,6 +1560,56 @@ html, body {
   text-align: center;
 }
 
+/* ================================================================
+   SHOP UI
+   ================================================================ */
+.shop-pack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+.shop-pack-title { font-weight: 800; }
+.shop-pack-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.shop-btn {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--accent), #ffcc66);
+  color: #1a1a2e;
+}
+.shop-btn.secondary {
+  background: rgba(255,255,255,0.10);
+  color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,0.10);
+}
+.shop-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.skin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+.skin-left { display: flex; gap: 12px; align-items: center; }
+.skin-preview { width: 44px; height: 44px; border-radius: 12px; display:flex; align-items:center; justify-content:center; background: rgba(0,0,0,0.18); font-size: 22px; }
+.skin-meta { display:flex; flex-direction:column; gap:2px; }
+.skin-title { font-weight: 900; }
+.skin-price { font-size: 12px; color: var(--text-secondary); }
+.skin-badges { display:flex; gap:6px; align-items:center; }
+.skin-badge { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(255,255,255,0.10); color: var(--text-secondary); }
+.skin-item.equipped { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-glow); }
+
 .friends-subtitle {
   margin-top: 14px;
   font-weight: 800;
@@ -1975,7 +2071,11 @@ html, body {
       <div class="bear-area" id="bearArea">
         <div class="speech-bubble" id="speechBubble"></div>
         <div class="bear-character normal" id="bearChar">
-          🐻
+          <div class="bear-wrap">
+            <div class="bear-base bear-color-brown" id="bearBase">🐻</div>
+            <div class="bear-layer hat" id="bearHat"></div>
+            <div class="bear-layer acc" id="bearAcc"></div>
+          </div>
           <div class="zzz-container">
             <span class="zzz">Z</span>
             <span class="zzz">Z</span>
@@ -2087,6 +2187,40 @@ html, body {
       </div>
     </div>
 
+    <!-- ======== TAB: Shop ======== -->
+    <div class="tab-content" id="tabShop">
+      <div class="league-section">
+        <div class="arena-title">🛒 Магазин</div>
+        <div class="arena-subtitle">Скины за 💎 и покупка 💎 за Telegram Stars</div>
+
+        <div class="upgrades-title" style="margin-top:14px">💎 Amber</div>
+        <div class="friends-card" style="margin-top:10px">
+          <div class="friends-row" style="margin-bottom:10px">
+            <div>
+              <div class="friends-title">Баланс</div>
+              <div class="friends-subtitle"><span id="shopAmberBalance">—</span> 💎</div>
+            </div>
+            <div class="friends-stat" style="text-align:right">
+              <div class="friends-stat-label">Stars</div>
+              <div class="friends-stat-value">⭐</div>
+            </div>
+          </div>
+          <div id="amberPacks" class="upgrade-list"></div>
+        </div>
+
+        <div class="upgrades-title" style="margin-top:18px">🎨 Скины</div>
+        <div class="friends-card" style="margin-top:10px">
+          <div class="lb-tabs" style="margin-bottom:10px">
+            <div class="lb-tab active" data-shop-tab="hat">🎩 Шапки</div>
+            <div class="lb-tab" data-shop-tab="accessory">🧸 Аксессуары</div>
+            <div class="lb-tab" data-shop-tab="background">🖼️ Фоны</div>
+            <div class="lb-tab" data-shop-tab="color">🎨 Цвет</div>
+          </div>
+          <div id="skinsGrid" class="leaderboard-list"></div>
+        </div>
+      </div>
+    </div>
+
 <!-- ======== TAB: More (Quests) ======== -->
 <div class="tab-content" id="tabMore">
   <div class="quests-section">
@@ -2175,7 +2309,7 @@ html, body {
       <span class="nav-icon">🏆</span>
       <span class="nav-label">League</span>
     </div>
-    <div class="nav-item disabled" data-tab="shop">
+    <div class="nav-item" data-tab="shop">
       <span class="nav-icon">🛒</span>
       <span class="nav-label">Shop</span>
     </div>
@@ -2192,7 +2326,7 @@ html, body {
    ============================================================== */
 const BASE_URL = 'https://xqaywuuaahcsjdipmgdg.supabase.co/functions/v1';
 // TODO: поставь юзернейм бота (без @), чтобы ссылка шаринга была корректной
-const BOT_USERNAME = 'HoneyLeagueBot';
+const BOT_USERNAME = 'BotName';
 
 /* ==============================================================
    TELEGRAM
@@ -2206,24 +2340,6 @@ if (tg) {
   tg.setBackgroundColor('#1a1a2e');
   initData = tg.initData || '';
 }
-function debugTg() {
-  const w = window.Telegram?.WebApp;
-  const info = {
-    hasTelegram: !!window.Telegram,
-    hasWebApp: !!w,
-    initDataLen: (w?.initData || '').length,
-    startParam: w?.initDataUnsafe?.start_param,
-    user: w?.initDataUnsafe?.user,
-    gameStateKeys: gameState ? Object.keys(gameState) : null,
-    gameStateTgId: gameState?.tg_id,
-  };
-  tg?.showPopup?.({
-    title: 'TG DEBUG',
-    message: JSON.stringify(info, null, 2).slice(0, 3500),
-    buttons: [{ type: 'ok', text: 'OK' }],
-  });
-}
-
 
 /* ==============================================================
    STATE
@@ -2449,6 +2565,7 @@ function renderState(s) {
   document.getElementById('amberValue').textContent = formatNum(s.amber);
   updateSatietyUI(s.satiety);
   updateBearVisual(s.satiety);
+  applyBearSkins(s);
 
   const den = DEN_MULT[s.den_level || 1] || 1;
   const bed = BED_INTERVAL[s.bed_level || 1] || 6;
@@ -2468,6 +2585,37 @@ function renderState(s) {
   renderUpgrades(s);
 // Streak (если таб More уже виден)
   renderStreak(s.login_streak || 0);
+}
+
+function skinEmoji(type, id) {
+  const map = {
+    hat: { cap: '🧢', crown: '👑', santa: '🎅' },
+    accessory: { scarf: '🧣', glasses: '🕶️', backpack: '🎒' },
+    background: { forest: '🌲', mountains: '🏔️', winter: '❄️', sakura: '🌸' },
+    color: { brown: '🟤', white: '⚪', panda: '🐼' },
+  };
+  return map?.[type]?.[id] || '';
+}
+
+function applyBearSkins(s) {
+  const area = document.getElementById('bearArea');
+  const base = document.getElementById('bearBase');
+  const hat = document.getElementById('bearHat');
+  const acc = document.getElementById('bearAcc');
+  if (!area || !base || !hat || !acc) return;
+
+  const bg = s.equipped_background || 'forest';
+  area.classList.remove('bg-forest','bg-mountains','bg-winter','bg-sakura');
+  area.classList.add(`bg-${bg}`);
+
+  const col = s.equipped_color || 'brown';
+  base.classList.remove('bear-color-brown','bear-color-white','bear-color-panda');
+  base.classList.add(`bear-color-${col}`);
+
+  const hatId = s.equipped_hat;
+  const accId = s.equipped_accessory;
+  hat.textContent = hatId ? skinEmoji('hat', hatId) : '';
+  acc.textContent = accId ? skinEmoji('accessory', accId) : '';
 }
 
 function updateBearVisual(satiety) {
@@ -3443,9 +3591,11 @@ function renderLeaderboard() {
     if (entry.league === 'gold') rankClass = 'gold';
     else if (entry.league === 'silver') rankClass = 'silver';
 
+    const hat = entry.skins?.hat ? skinEmoji('hat', entry.skins.hat) : '';
+    const acc = entry.skins?.accessory ? skinEmoji('accessory', entry.skins.accessory) : '';
     el.innerHTML = `
       <span class="lb-rank ${rankClass}">#${entry.rank}</span>
-      <span class="lb-bear">🐻</span>
+      <span class="lb-bear">🐻${hat}${acc}</span>
       <span class="lb-name">${escapeHtml(entry.bear_name)}</span>
       <span class="lb-rp">${entry.season_rp}</span>
       <span class="lb-league-icon">${LEAGUE_ICONS[entry.league]}</span>
@@ -3463,9 +3613,11 @@ function renderLeaderboard() {
     const s = leaderboardData.self;
     const selfEl = document.createElement('div');
     selfEl.className = 'lb-entry self';
+    const sh = s.skins?.hat ? skinEmoji('hat', s.skins.hat) : '';
+    const sa = s.skins?.accessory ? skinEmoji('accessory', s.skins.accessory) : '';
     selfEl.innerHTML = `
       <span class="lb-rank">#${s.rank}</span>
-      <span class="lb-bear">🐻</span>
+      <span class="lb-bear">🐻${sh}${sa}</span>
       <span class="lb-name">${escapeHtml(s.bear_name)}</span>
       <span class="lb-rp">${s.season_rp}</span>
       <span class="lb-league-icon">${LEAGUE_ICONS[s.league]}</span>
@@ -3485,25 +3637,11 @@ function escapeHtml(str) {
    ============================================================== */
 let referralCache = null;
 
-function getTgId() {
-  const a = gameState?.tg_id;
-  if (a !== null && a !== undefined) return String(a);
-
-  const b = tg?.initDataUnsafe?.user?.id;
-  if (b !== null && b !== undefined) return String(b);
-
-  const c = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
-  if (c !== null && c !== undefined) return String(c);
-
-  return null;
-}
-
 function buildReferralUrl() {
-  const tgId = getTgId();
+  const tgId = gameState?.tg_id;
   if (!tgId) return null;
   return `https://t.me/${BOT_USERNAME}/app?startapp=ref_${tgId}`;
 }
-
 
 function renderMilestones(ms) {
   const wrap = document.getElementById('milestoneList');
@@ -3594,13 +3732,12 @@ function renderFriends(list) {
       const url = buildReferralUrl();
       if (!url) return;
       const text = '🔥 Я прокачиваю медведя в HoneyBear! Заходи по моей ссылке — будет награда 🎁';
-     const share = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-if (tg?.openTelegramLink) {
-  tg.openTelegramLink(share);
-  tg?.HapticFeedback?.impactOccurred?.('light');
-} else {
-  window.open(share, '_blank');
-}
+      if (tg?.shareUrl) {
+        tg.shareUrl(url, text);
+      } else {
+        navigator.clipboard?.writeText(url);
+        tg?.showAlert?.('Ссылка скопирована');
+      }
     });
   });
 }
@@ -3633,36 +3770,198 @@ async function loadReferralStats(force = false) {
   }
 }
 
-document.addEventListener('click', (e) => {
-  const t = e.target;
-  if (!(t instanceof HTMLElement)) return;
-  if (t.id !== 'inviteBtn') return;
-
+document.getElementById('inviteBtn')?.addEventListener('click', async () => {
   const url = buildReferralUrl();
-  if (!url) {
-    tg?.showAlert?.('Не удалось получить TG ID');
-    return;
-  }
-
+  if (!url) return;
   const text = '🐻 HoneyBear: прокачай медведя, сыграй арену и получи бонус по моей ссылке 🎁';
-  const share = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
-
-  if (tg?.openTelegramLink) {
-    tg.openTelegramLink(share);
-    tg?.HapticFeedback?.impactOccurred?.('light');
+  if (tg?.shareUrl) {
+    tg.shareUrl(url, text);
   } else {
-    // в некоторых webview window.open может быть заблокирован — но это хотя бы попытка
-    location.href = share;
+    try {
+      await navigator.clipboard.writeText(url);
+      tg?.showAlert?.('Ссылка скопирована');
+    } catch {
+      prompt('Скопируй ссылку:', url);
+    }
   }
 });
 
+/* ==============================================================
+   SHOP UI (Skins + Stars)
+   ============================================================== */
+let shopCache = null;
+let shopTab = 'hat';
 
+function prettySkinName(type, id) {
+  const names = {
+    hat: { cap: 'Кепка', crown: 'Корона', santa: 'Санта-шапка' },
+    accessory: { scarf: 'Шарф', glasses: 'Очки', backpack: 'Рюкзак' },
+    background: { forest: 'Лес', mountains: 'Горы', winter: 'Зима', sakura: 'Сакура' },
+    color: { brown: 'Коричневый', white: 'Белый', panda: 'Панда' },
+  };
+  return names?.[type]?.[id] || id;
+}
+
+function renderAmberPacks(packs) {
+  const wrap = document.getElementById('amberPacks');
+  if (!wrap) return;
+  wrap.innerHTML = (packs || []).map(p => `
+    <div class="shop-pack">
+      <div>
+        <div class="shop-pack-title">💎 ${p.amber} Amber</div>
+        <div class="shop-pack-sub">⭐ ${p.stars} Stars</div>
+      </div>
+      <button class="shop-btn" data-product="${p.product_id}">Купить</button>
+    </div>
+  `).join('');
+
+  wrap.querySelectorAll('button[data-product]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const productId = btn.dataset.product;
+      btn.disabled = true;
+      try {
+        const r = await apiPost('create-invoice', { product_id: productId });
+        const link = r.invoice_link;
+        if (!link) throw new Error('Нет ссылки инвойса');
+
+        // Best: openInvoice inside Telegram
+        if (tg?.openInvoice) {
+          tg.openInvoice(link, async (status) => {
+            if (status === 'paid') {
+              tg?.HapticFeedback?.notificationOccurred?.('success');
+              tg?.showAlert?.('Оплата прошла! Начисляю 💎...');
+              // Webhook credits amber; just refresh state.
+              await loadState();
+              await loadShop(true);
+            }
+          });
+        } else if (tg?.openTelegramLink) {
+          tg.openTelegramLink(link);
+        } else {
+          window.open(link, '_blank');
+        }
+      } catch (e) {
+        tg?.HapticFeedback?.notificationOccurred?.('error');
+        tg?.showAlert?.(e?.message || 'Ошибка покупки');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+function renderSkinsGrid(type, catalog, owned, equipped, amber) {
+  const wrap = document.getElementById('skinsGrid');
+  if (!wrap) return;
+  const list = (catalog?.[type] || []);
+  const ownedList = owned?.[type] || [];
+  const eq = equipped?.[type] || null;
+
+  wrap.innerHTML = list.map(it => {
+    const isOwned = it.priceAmber === 0 || ownedList.includes(it.id);
+    const isEquipped = (eq === it.id) || (type === 'background' && (eq || 'forest') === it.id) || (type === 'color' && (eq || 'brown') === it.id);
+    const canBuy = !isOwned && (amber >= it.priceAmber);
+    const emoji = skinEmoji(type, it.id);
+    const title = prettySkinName(type, it.id);
+    const price = it.priceAmber === 0 ? 'Бесплатно' : `${it.priceAmber} 💎`;
+    const badges = [
+      isOwned ? '<span class="skin-badge">✅ Куплен</span>' : '',
+      isEquipped ? '<span class="skin-badge">⭐ Надет</span>' : '',
+      it.seasonal ? '<span class="skin-badge">🎄 Сезонный</span>' : '',
+    ].filter(Boolean).join('');
+
+    let btnHtml = '';
+    if (!isOwned) {
+      btnHtml = `<button class="shop-btn" data-act="buy" data-type="${type}" data-id="${it.id}" ${canBuy ? '' : 'disabled'}>Купить</button>`;
+    } else {
+      if ((type === 'hat' || type === 'accessory') && isEquipped) {
+        btnHtml = `<button class="shop-btn secondary" data-act="unequip" data-type="${type}">Снять</button>`;
+      } else {
+        btnHtml = `<button class="shop-btn secondary" data-act="equip" data-type="${type}" data-id="${it.id}">Надеть</button>`;
+      }
+    }
+
+    return `
+      <div class="skin-item ${isEquipped ? 'equipped' : ''}">
+        <div class="skin-left">
+          <div class="skin-preview">${emoji || '✨'}</div>
+          <div class="skin-meta">
+            <div class="skin-title">${title}</div>
+            <div class="skin-price">${price}</div>
+            <div class="skin-badges">${badges}</div>
+          </div>
+        </div>
+        <div>${btnHtml}</div>
+      </div>
+    `;
+  }).join('');
+
+  wrap.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const act = btn.dataset.act;
+      const t = btn.dataset.type;
+      const id = btn.dataset.id;
+      btn.disabled = true;
+      try {
+        if (act === 'buy') {
+          await apiPost('buy-skin', { item_type: t, item_id: id });
+          tg?.HapticFeedback?.notificationOccurred?.('success');
+        } else if (act === 'equip') {
+          await apiPost('equip-skin', { item_type: t, item_id: id });
+          tg?.HapticFeedback?.impactOccurred?.('light');
+        } else if (act === 'unequip') {
+          await apiPost('equip-skin', { item_type: t, item_id: null });
+          tg?.HapticFeedback?.impactOccurred?.('light');
+        }
+        await loadState();
+        await loadShop(true);
+      } catch (e) {
+        tg?.HapticFeedback?.notificationOccurred?.('error');
+        tg?.showAlert?.(e?.message || 'Ошибка');
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+async function loadShop(force = false) {
+  if (shopCache && !force) {
+    document.getElementById('shopAmberBalance').textContent = formatNum(shopCache.balances?.amber || 0);
+    renderAmberPacks(shopCache.packs);
+    renderSkinsGrid(shopTab, shopCache.catalog, shopCache.owned, shopCache.equipped, shopCache.balances?.amber || 0);
+    return;
+  }
+  try {
+    const data = await apiPost('get-shop');
+    shopCache = data;
+    document.getElementById('shopAmberBalance').textContent = formatNum(data.balances?.amber || 0);
+    renderAmberPacks(data.packs);
+    renderSkinsGrid(shopTab, data.catalog, data.owned, data.equipped, data.balances?.amber || 0);
+  } catch (e) {
+    console.warn('get-shop error:', e);
+    document.getElementById('skinsGrid').innerHTML = '<div class="lb-empty">Ошибка загрузки магазина</div>';
+  }
+}
+
+// Shop category tabs
+document.querySelectorAll('[data-shop-tab]').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('[data-shop-tab]').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    shopTab = el.dataset.shopTab;
+    loadShop(true);
+  });
+});
 
 // Load league when tab is opened
 document.querySelectorAll('.nav-item').forEach(item => {
   item.addEventListener('click', () => {
     if (item.dataset.tab === 'league') {
       loadLeague();
+    }
+    if (item.dataset.tab === 'shop') {
+      loadShop(false);
     }
   });
 });
