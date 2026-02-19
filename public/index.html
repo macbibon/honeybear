@@ -3467,11 +3467,25 @@ function escapeHtml(str) {
    ============================================================== */
 let referralCache = null;
 
+function getTgId() {
+  const a = gameState?.tg_id;
+  if (a !== null && a !== undefined) return String(a);
+
+  const b = tg?.initDataUnsafe?.user?.id;
+  if (b !== null && b !== undefined) return String(b);
+
+  const c = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+  if (c !== null && c !== undefined) return String(c);
+
+  return null;
+}
+
 function buildReferralUrl() {
-  const tgId = gameState?.tg_id;
+  const tgId = getTgId();
   if (!tgId) return null;
   return `https://t.me/${BOT_USERNAME}/app?startapp=ref_${tgId}`;
 }
+
 
 function renderMilestones(ms) {
   const wrap = document.getElementById('milestoneList');
