@@ -1145,6 +1145,11 @@ html, body {
   border: 1px solid #ffffff15;
 }
 
+.result-btn.ad-double {
+  background: linear-gradient(135deg, #5d4037, #795548);
+  color: #fff;
+}
+
 /* ================================================================
    BOTTOM NAVIGATION
    ================================================================ */
@@ -1965,6 +1970,8 @@ html, body {
 .content::-webkit-scrollbar-track { background: transparent; }
 .content::-webkit-scrollbar-thumb { background: #ffffff15; border-radius: 2px; }
 </style>
+<!-- AdsGram SDK -->
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 </head>
 <body>
 
@@ -2050,6 +2057,7 @@ html, body {
     <div class="result-emoji" id="resultEmoji">🏆</div>
     <div class="result-title" id="resultTitle">Победа!</div>
     <div class="result-rewards" id="resultRewards"></div>
+    <button class="result-btn ad-double" id="resultDoubleBtn" style="display:none">📺 Удвоить мёд (реклама)</button>
     <button class="result-btn again" id="resultAgain">⚔️ Ещё раз (20 🍯)</button>
     <button class="result-btn back" id="resultBack">← Назад</button>
   </div>
@@ -2121,6 +2129,9 @@ html, body {
 
       <button class="feed-btn" id="feedBtn" style="margin-top:12px">
         🍽️ Покормить
+      </button>
+      <button class="feed-btn" id="bonusHoneyBtn" style="margin-top:8px;background:linear-gradient(135deg,#795548,#5d4037);font-size:15px">
+        📺 Бонусный мёд (реклама, <span id="bonusHoneyLeft">2</span>/2)
       </button>
 
       <!-- ======== UPGRADES (единственный экземпляр) ======== -->
@@ -2340,6 +2351,97 @@ if (tg) {
   tg.setBackgroundColor('#1a1a2e');
   initData = tg.initData || '';
 }
+
+/* ==============================================================
+   ADSGRAM INTEGRATION
+   ============================================================== */
+// Block IDs — replace with your real AdsGram block IDs from the dashboard
+const ADSGRAM_BLOCK_IDS = {
+  feed:         '23429',
+  arena_double: '23430',
+  daily_double: '23431',
+  bonus_honey:  '23432',
+};
+
+let adsgramControllers = {};
+
+function initAdsgram() {
+  if (!window.Adsgram) return; // SDK not loaded
+  for (const [type, blockId] of Object.entries(ADSGRAM_BLOCK_IDS)) {
+    if (!blockId || blockId.startsWith('YOUR_')) continue;
+    try {
+      adsgramControllers[type] = window.Adsgram.init({ blockId });
+    } catch (e) {
+      console.warn('AdsGram init failed for', type, e);
+    }
+  }
+}
+
+/**
+ * Show a rewarded ad and call onSuccess() if completed.
+ * Falls back to mock (instant reward) if AdsGram unavailable.
+ */
+async function showAd(adType, onSuccess) {
+  const ctrl = adsgramControllers[adType];
+  if (ctrl) {
+    try {
+      await ctrl.show();
+      await onSuccess();
+    } catch (e) {
+      if (e?.type === 'error') {
+        tg?.showAlert?.('Не удалось загрузить рекламу. Попробуй позже.');
+      }
+      // user skipped — no reward
+    }
+  } else {
+    // ── MVP mock: instant reward ──
+    await onSuccess();
+  }
+}
+
+/**
+ * Call watch-ad endpoint and update gameState.
+ * Returns { success, reward, state } or null on error.
+ */
+async function callWatchAd(adType, arenaId) {
+  try {
+    const body = { ad_type: adType };
+    if (arenaId) body.arena_id = arenaId;
+    const res = await fetch(`${BASE_URL}/watch-ad`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${initData}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      tg?.showAlert?.(data.error || 'Ошибка рекламы');
+      return null;
+    }
+    gameState = data.state;
+    renderState(gameState);
+    updateAdCounters();
+    return data;
+  } catch (e) {
+    console.error('callWatchAd error:', e);
+    return null;
+  }
+}
+
+function updateAdCounters() {
+  if (!gameState) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const isToday = (d) => d === today;
+
+  // Bonus honey button counter
+  const bonusLeft = 2 - (isToday(gameState.ad_types_date) ? (gameState.ad_bonus_today || 0) : 0);
+  const bonusEl = document.getElementById('bonusHoneyLeft');
+  if (bonusEl) bonusEl.textContent = Math.max(0, bonusLeft);
+  const bonusBtn = document.getElementById('bonusHoneyBtn');
+  if (bonusBtn) bonusBtn.disabled = bonusLeft <= 0;
+}
 // =====================
 // HARD GUARDS / DEBUG
 // =====================
@@ -2554,7 +2656,7 @@ async function loadState() {
         'Authorization': `Bearer ${initData}`,
         'Content-Type': 'application/json',
       },
-      body: '{}',
+      body: JSON.stringify({ timezone_offset: -new Date().getTimezoneOffset() }),
       signal: controller.signal,
     });
 
@@ -2579,6 +2681,8 @@ async function loadState() {
     renderStreak(gameState.login_streak || 0);
     loadQuests();
     tryApplyReferralOnce();
+    initAdsgram();
+    updateAdCounters();
 
     const name = (gameState.bear_name || "").trim();
     if (name.endsWith("'s Bear") || name === "Bear" || name === "Медведь") {
@@ -2746,6 +2850,17 @@ document.getElementById('bearArea').addEventListener('click', () => {
    ============================================================== */
 document.getElementById('feedBtn').addEventListener('click', openFeedModal);
 
+document.getElementById('bonusHoneyBtn').addEventListener('click', () => {
+  showAd('bonus_honey', async () => {
+    const result = await callWatchAd('bonus_honey');
+    if (result) {
+      const gained = Math.round(result.reward.honey);
+      tg?.showAlert?.(`+${gained} 🍯 получено! (2 ч дохода)`);
+      spawnParticles();
+    }
+  });
+});
+
 async function feedBear(foodType) {
   document.querySelectorAll('.food-item').forEach(i => i.classList.add('loading'));
   try {
@@ -2817,7 +2932,13 @@ function openFeedModal() {
       </div>
       <div class="food-cost ${f.free ? 'free' : ''}">${f.cost}</div>
     `;
-    if (!f.disabled) item.addEventListener('click', () => feedBear(f.type));
+    if (!f.disabled) item.addEventListener('click', () => {
+      if (f.type === 'ad') {
+        showAd('feed', () => feedBear('ad'));
+      } else {
+        feedBear(f.type);
+      }
+    });
     list.appendChild(item);
   });
   document.getElementById('feedModal').classList.add('show');
@@ -3175,6 +3296,25 @@ function showResult(d) {
   `;
 
   document.getElementById('resultAgain').disabled = gameState.honey < 20;
+
+  // Arena double-reward ad button
+  const doubleBtn = document.getElementById('resultDoubleBtn');
+  const today = new Date().toISOString().slice(0, 10);
+  const arenaAdsLeft = 3 - (gameState.ad_types_date === today ? (gameState.ad_arena_today || 0) : 0);
+  const canDoubleArena = isWin && d.honey_reward > 0 && arenaAdsLeft > 0;
+  doubleBtn.style.display = canDoubleArena ? '' : 'none';
+  doubleBtn.onclick = () => {
+    doubleBtn.style.display = 'none';
+    showAd('arena_double', async () => {
+      const result = await callWatchAd('arena_double', d.arena_id);
+      if (result) {
+        const gained = Math.round(result.reward.honey);
+        tg?.showAlert?.(`+${gained} 🍯 получено!`);
+        spawnParticles();
+      }
+    });
+  };
+
   document.getElementById('resultOverlay').classList.add('show');
   tg?.HapticFeedback?.notificationOccurred?.(isWin ? 'success' : 'error');
 }
@@ -3303,9 +3443,34 @@ function showLoginReward(reward) {
   const toast = document.getElementById('loginRewardToast');
   let text = `🔥 День ${reward.streak}! +${reward.honey} 🍯`;
   if (reward.amber > 0) text += ` +${reward.amber} 💎`;
-  toast.textContent = text;
+  toast.innerHTML = text;
+
+  // Add double button if daily ad not yet used today
+  const today = new Date().toISOString().slice(0, 10);
+  const alreadyUsed = gameState && gameState.ad_types_date === today && (gameState.ad_daily_today || 0) >= 1;
+  if (!alreadyUsed) {
+    const btn = document.createElement('button');
+    btn.textContent = '📺 Удвоить (реклама)';
+    btn.style.cssText = 'display:block;margin:8px auto 0;padding:6px 14px;border:none;border-radius:12px;background:#f5a623;color:#000;font-weight:700;cursor:pointer;';
+    btn.onclick = () => {
+      btn.remove();
+      showAd('daily_double', async () => {
+        const result = await callWatchAd('daily_double');
+        if (result) {
+          const gained = result.reward.honey;
+          const gainedA = result.reward.amber;
+          let extra = `+${gained} 🍯`;
+          if (gainedA > 0) extra += ` +${gainedA} 💎`;
+          toast.textContent = `🎁 Бонус удвоен! ${extra}`;
+          spawnParticles();
+        }
+      });
+    };
+    toast.appendChild(btn);
+  }
+
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3000);
+  setTimeout(() => toast.classList.remove('show'), 6000);
   spawnParticles();
 }
 

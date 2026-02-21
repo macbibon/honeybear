@@ -180,6 +180,24 @@ serve(async (req: Request) => {
       },
     ]);
 
+    // ── Notify referrer via Telegram (best-effort) ──
+    const botToken = Deno.env.get("BOT_TOKEN");
+    const miniAppUrl = Deno.env.get("MINI_APP_URL") || "https://t.me/HoneyBearBot/app";
+    if (botToken && referrer.tg_id) {
+      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: referrer.tg_id,
+          text: `🎉 Новый друг присоединился! +${instantHoney}🍯 +${instantAmber}💎`,
+          parse_mode: "HTML",
+          reply_markup: {
+            inline_keyboard: [[{ text: "🐻 Открыть игру", web_app: { url: miniAppUrl } }]],
+          },
+        }),
+      }).catch(() => {});
+    }
+
     return json({ ok: true, fraud_flag: fraudFlag });
   } catch (err: any) {
     console.error("apply-referral error:", err);

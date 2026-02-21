@@ -238,6 +238,7 @@ serve(async (req: Request) => {
     return json({
       result, player_hp: pHP, opponent_hp: oHP,
       player_scores: pScores, opponent_scores: oScores,
+      arena_id: arenaId,
       honey_reward: Math.floor(honeyReward * 100) / 100,
       rp_reward: rpReward, streak: newStreak,
       streak_bonus: Math.floor(streakBonus * 100) / 100,

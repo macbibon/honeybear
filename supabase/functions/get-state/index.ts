@@ -87,6 +87,10 @@ function toState(u: any) {
     free_food_at: u.free_food_at || "1970-01-01T00:00:00Z",
     ads_today: u.ads_today || 0,
     ads_today_date: u.ads_today_date || new Date().toISOString().slice(0, 10),
+    ad_arena_today: u.ad_arena_today || 0,
+    ad_daily_today: u.ad_daily_today || 0,
+    ad_bonus_today: u.ad_bonus_today || 0,
+    ad_types_date:  u.ad_types_date  || new Date().toISOString().slice(0, 10),
     arena_streak: u.arena_streak || 0,
     den_level: u.den_level || 1,
     feeder_level: u.feeder_level || 1,
@@ -134,6 +138,11 @@ serve(async (req: Request) => {
 
     const tgUser = await validateInitData(initData);
     const tgId = tgUser.id;
+
+    const body = await req.json().catch(() => ({}));
+    const timezoneOffset: number = typeof body.timezone_offset === "number"
+      ? Math.max(-840, Math.min(840, body.timezone_offset))
+      : 0;
 
     let { data: user, error } = await supabase
       .from("users").select("*").eq("tg_id", tgId).maybeSingle();
@@ -223,6 +232,7 @@ serve(async (req: Request) => {
       last_satiety_update: user.last_satiety_update,
       login_streak: user.login_streak,
       last_login_date: user.last_login_date,
+      timezone_offset: timezoneOffset,
     }).eq("id", user.id);
 
     const resp: any = toState(user);
